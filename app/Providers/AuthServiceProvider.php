@@ -18,6 +18,8 @@ use App\Policies\VideoPolicy;
 use App\Review;
 use App\Title;
 use App\Video;
+use App\VideoCaption;
+use App\Policies\CaptionPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -29,6 +31,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         'App\Model' => 'App\Policies\ModelPolicy',
+        VideoCaption::class => CaptionPolicy::class,
         ListModel::class => ListPolicy::class,
         Title::class => TitlePolicy::class,
         Image::class => ImagePolicy::class,

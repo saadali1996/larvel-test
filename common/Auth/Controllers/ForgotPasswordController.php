@@ -1,10 +1,10 @@
 <?php namespace Common\Auth\Controllers;
 
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 
-class ForgotPasswordController extends Controller
+class ForgotPasswordController extends BaseController
 {
     use SendsPasswordResetEmails;
 

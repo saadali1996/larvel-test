@@ -2,8 +2,8 @@
 
 use Closure;
 use Common\Core\Controllers\HomeController;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class PrerenderIfCrawler
 {
@@ -30,16 +30,21 @@ class PrerenderIfCrawler
      *
      * @param Request $request
      * @param Closure $next
+     * @param string $routeName
      * @return Request|View
      */
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next, $routeName = null)
     {
         if ($this->shouldPrerender($request)) {
             define('SHOULD_PRERENDER', true);
-            return $next($request);
-        } else {
+
+        // Always fallback to client routes if not prerendering
+        // otherwise prerender routes will override client side routing
+        } else if ($routeName !== 'homepage') {
             return app(HomeController::class)->show();
         }
+
+        return $next($request);
     }
 
     /**

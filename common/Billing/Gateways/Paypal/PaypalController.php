@@ -1,11 +1,13 @@
 <?php namespace Common\Billing\Gateways\Paypal;
 
 use Common\Billing\BillingPlan;
+use Common\Billing\GatewayException;
 use Common\Billing\Subscription;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class PaypalController extends Controller
+class PaypalController extends BaseController
 {
     /**
      * @var Request
@@ -28,8 +30,6 @@ class PaypalController extends Controller
     private $paypal;
 
     /**
-     * PaypalController constructor.
-     *
      * @param Request $request
      * @param BillingPlan $billingPlan
      * @param Subscription $subscription
@@ -55,8 +55,8 @@ class PaypalController extends Controller
     /**
      * Create subscription agreement on paypal.
      *
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Common\Billing\GatewayException
+     * @return JsonResponse
+     * @throws GatewayException
      */
     public function createSubscriptionAgreement()
     {
@@ -77,8 +77,8 @@ class PaypalController extends Controller
     /**
      * Execute subscription agreement on paypal.
      *
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Common\Billing\GatewayException
+     * @return JsonResponse
+     * @throws GatewayException
      */
     public function executeSubscriptionAgreement()
     {
@@ -94,7 +94,7 @@ class PaypalController extends Controller
         $plan = $this->billingPlan->findOrFail($this->request->get('plan_id'));
         $this->request->user()->subscribe('paypal', $subscriptionId, $plan);
 
-        return $this->success(['user' => $this->request->user()->load('subscriptions')]);
+        return $this->success(['user' => $this->request->user()->load('permissions', 'subscriptions.plan')]);
     }
 
     /**

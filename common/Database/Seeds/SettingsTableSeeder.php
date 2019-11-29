@@ -13,8 +13,6 @@ class SettingsTableSeeder extends Seeder
     private $setting;
 
     /**
-     * SettingsTableSeeder constructor.
-     *
      * @param Setting $setting
      */
     public function __construct(Setting $setting)
@@ -44,6 +42,15 @@ class SettingsTableSeeder extends Seeder
             if ( ! array_key_exists('private', $setting)) {
                 $setting['private'] = 0;
             }
+
+            // cast booleans to string as "insert"
+            // method will not use Setting model setters
+            if ($setting['value'] === true) {
+                $setting['value'] = 'true';
+            } else if ($setting['value'] === false) {
+                $setting['value'] = 'false';
+            }
+            $setting['value'] = (string) $setting['value'];
 
             return $setting;
         }, $defaultSettings);

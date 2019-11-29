@@ -2,13 +2,13 @@
 
 namespace App\Services\Titles;
 
-use App\Season;
-use App\Services\Data\Contracts\DataProvider;
-use App\Services\Data\Tmdb\TmdbApi;
-use App\Title;
 use App\Episode;
+use App\Season;
+use App\Title;
 use Carbon\Carbon;
 use Common\Settings\Settings;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LoadSeasonData
 {
@@ -49,13 +49,8 @@ class LoadSeasonData
         $season = $this->findSeason($title->id, $seasonNumber);
 
         if ($this->needsUpdating($title, $season)) {
-            // Fetch title seasons, even if automation is disabled because they can't be
-            // fetched when importing multiple titles without hitting tmdb api rate limits
-            if ($this->settings->get('content.force_season_update')) {
-                $data = app(TmdbApi::class)->getSeason($title, $seasonNumber);
-            } else {
-                $data = app(DataProvider::class)->getSeason($title, $seasonNumber);
-            }
+            $data = Title::dataProvider(['forSeason' => true])
+                ->getSeason($title, $seasonNumber);
             app(StoreSeasonData::class)->execute($title, $data);
             $season = $this->findSeason($title->id, $seasonNumber);
         }
@@ -72,7 +67,11 @@ class LoadSeasonData
     private function findSeason($titleId, $seasonNumber)
     {
         return $this->season
-            ->with('episodes')
+            ->with(['episodes' => function(HasMany $builder) use($titleId, $seasonNumber) {
+                if ($this->settings->get('streaming.show_label')) {
+                    $builder->withCount('stream_videos');
+                }
+            }])
             ->where('title_id', $titleId)
             ->where('number', $seasonNumber)
             ->first();
@@ -85,7 +84,7 @@ class LoadSeasonData
      * @param Season $season
      * @return mixed
      */
-    private function needsUpdating(Title $title, Season $season)
+    public function needsUpdating(Title $title, Season $season)
     {
         // series ended and this season is already fully updated from external site
         if ($title->series_ended && $season->fully_synced) return false;

@@ -22,9 +22,10 @@ class Settings {
         'billing.stripe_public_key' => 'services.stripe.key',
         'common.site.demo' => 'common.site.demo',
         'logging.sentry_public' => 'sentry.dsn',
-        'branding.site_name' => 'app.name',
         'i18n.default_localization' => 'app.locale',
         'billing.integrated' => 'common.site.billing_integrated',
+        'api.integrated' => 'common.site.api_integrated',
+        'branding.site_name' => 'app.name',
     ];
 
     /**

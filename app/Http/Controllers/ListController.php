@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Listable;
 use App\ListModel;
+use App\Services\Lists\DeleteLists;
+use App\Services\Lists\UpdateListsContent;
 use Auth;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Database\Paginator;
 use DB;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +16,7 @@ use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
-class ListController extends Controller
+class ListController extends BaseController
 {
     /**
      * @var Request
@@ -43,7 +45,7 @@ class ListController extends Controller
     {
         $this->authorize('index', [ListModel::class, Auth::id()]);
 
-        $paginator = (new Paginator($this->list));
+        $paginator = (new Paginator($this->list, $this->request->all()));
 
         if ($userId = $this->request->get('userId')) {
             $paginator->where('user_id', $userId);
@@ -57,7 +59,7 @@ class ListController extends Controller
             $paginator->where('system', false);
         }
 
-        $pagination = $paginator->paginate($this->request->all());
+        $pagination = $paginator->paginate();
 
         return $this->success(['pagination' => $pagination]);
     }
@@ -80,7 +82,7 @@ class ListController extends Controller
             $this->request->get('sortDir') === 'desc'
         )->values();
 
-        $paginator = new LengthAwarePaginator($items, $items->count(), 5);
+        $paginator = new LengthAwarePaginator($items, $items->count(), $items->count() ?: 1);
 
         return $this->success([
             'list' => $list,
@@ -99,22 +101,28 @@ class ListController extends Controller
             'details.name' => 'required|string|max:100',
             'details.description' => 'nullable|string|max:500',
             'details.public' => 'boolean',
-            'auto_update' => 'string',
+            'details.auto_update' => 'nullable|string',
             'items' => 'array'
         ]);
 
         $details = $this->request->get('details');
+        $autoUpdate = Arr::get($details, 'auto_update');
 
         $list = $this->list->create([
             'name' => $details['name'],
             'description' => $details['description'],
-            'auto_update' => Arr::get($details, 'auto_update'),
+            'auto_update' => $autoUpdate,
             'public' => $details['public'],
             'user_id' => Auth::id()
         ]);
 
        if ($items = $this->request->get('items')) {
            $list->attachItems($items);
+       }
+
+       if ($autoUpdate) {
+           app(UpdateListsContent::class)
+               ->execute([$list]);
        }
 
         return $this->success(['list' => $list]);
@@ -135,7 +143,13 @@ class ListController extends Controller
             'details.description' => 'nullable|string|max:500',
         ]);
 
+        $originalAutoUpdate = $list->auto_update;
         $list->fill($this->request->get('details'))->save();
+
+        if ($originalAutoUpdate !== $list->auto_update) {
+            app(UpdateListsContent::class)
+                ->execute([$list]);
+        }
 
         return $this->success(['list' => $list]);
     }
@@ -147,17 +161,14 @@ class ListController extends Controller
     {
         $listIds = $this->request->get('listIds');
 
+        // make sure system lists can't be deleted
         $lists = $this->list->whereIn('id', $listIds)
             ->where('system', false)
             ->get();
 
         $this->authorize('destroy', [ListModel::class, $lists]);
 
-        // make sure system lists can't be deleted
-        $listIds = $lists->pluck('id');
-
-        app(Listable::class)->whereIn('list_id', $listIds)->delete();
-        $this->list->whereIn('id', $listIds)->delete();
+        app(DeleteLists::class)->execute($lists->pluck('id'));
 
         return $this->success();
     }

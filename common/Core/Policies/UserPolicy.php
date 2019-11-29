@@ -35,13 +35,13 @@ class UserPolicy
 
     public function update(BaseUser $current, BaseUser $toUpdate = null)
     {
-        //user has proper permissions
+        // user has proper permissions
         if ($current->hasPermission('users.update')) return true;
 
-        //no permissions and not trying to update his own model
+        // no permissions and not trying to update his own model
         if ( ! $toUpdate || ($current->id !== $toUpdate->id)) return false;
 
-        //user should not be able to change his own permissions or roles
+        // user should not be able to change his own permissions or roles
         if ($this->request->get('permissions') || $this->request->get('roles')) {
             return false;
         }

@@ -1,18 +1,19 @@
 <?php namespace Common\Core\Controllers;
 
-use Common\Core\BootstrapData;
-use Common\Core\Controller;
+use Common\Core\Bootstrap\BootstrapData;
+use Common\Core\BaseController;
+use Illuminate\Http\JsonResponse;
 
-class BootstrapController extends Controller
+class BootstrapController extends BaseController
 {
     /**
      * Get data needed to bootstrap the application.
      *
      * @param BootstrapData $bootstrapData
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function getBootstrapData(BootstrapData $bootstrapData)
     {
-        return response(['data' => $bootstrapData->get()]);
+        return response(['data' => $bootstrapData->init()->getEncoded()]);
     }
 }

@@ -7,7 +7,7 @@ return [
         'site-primary-color-200',
         'site-bg-color-100',
         'site-bg-color-200',
-        'site-bg-color-300',
+        '--be-flat-button',
         'site-bg-color-400',
         'site-text-color-100',
         'site-text-color-200',

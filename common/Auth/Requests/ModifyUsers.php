@@ -21,15 +21,16 @@ class ModifyUsers extends BaseFormRequest
      */
     public function rules()
     {
-        $userId = $this->route('id');
+        $lettersAndSpace = '/^[\pL\s]+$/u';
+        $except = $this->getMethod() === 'PUT' ? $this->route('user')->id : '';
 
         $rules = [
-            'first_name'      => 'alpha|min:2|max:255|nullable',
-            'last_name'       => 'alpha|min:2|max:255|nullable',
+            'first_name'      => "regex:$lettersAndSpace|min:2|max:255|nullable",
+            'last_name'       => "regex:$lettersAndSpace|min:2|max:255|nullable",
             'permissions'     => 'array',
             'roles'          => 'array',
             'password'        => 'min:3|max:255',
-            'email'           => "email|min:3|max:255|unique:users,email,$userId",
+            'email'           => "email|min:3|max:255|unique:users,email,$except",
             'available_space' => 'nullable|min:0'
         ];
 

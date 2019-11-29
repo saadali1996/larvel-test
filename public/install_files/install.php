@@ -10,8 +10,8 @@
 
     <!-- Styles -->
     <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link href="assets/css/vuetify.min.css" rel="stylesheet">
+    <link href="assets/css/styles.css" rel="stylesheet">
 
     <!-- Base URL -->
     <?php if (!isset($fatalError)): ?>
@@ -66,7 +66,7 @@
 
                 <v-stepper-items>
                     <v-stepper-content step="1" class="introduction-step">
-                        <p class="margin-top-none">Welcome to {{appName}}. Before getting started, we need some information on the database. You will need to know the following items before proceeding.</p>
+                        <p class="margin-top-none">Welcome to the installation wizard. Before getting started, we need some information on the database. You will need to know the following items before proceeding.</p>
 
                         <ol>
                             <li>Database host</li>
@@ -77,7 +77,7 @@
 
                         <p>Most likely these items were supplied to you by your Web Host. If you don’t have this information, then you will need to contact them before you can continue.</p>
 
-                        <p>Installer will insert this information inside a configuration file so {{appName}} can communicate with your database.</p>
+                        <p>Installer will insert this information inside a configuration file so your site can communicate with your database.</p>
 
                         <p>Need more help? <a href="https://support.vebto.com/help-center/articles/35/37/34/installation" target="_blank">See installation guide.</a></p>
 

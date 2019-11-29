@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\ListModel;
 use App\Title;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use DB;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class VideoOrderController extends Controller
+class VideoOrderController extends BaseController
 {
     /**
      * @var Title
@@ -32,7 +33,7 @@ class VideoOrderController extends Controller
 
     /**
      * @param int $titleId
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function changeOrder($titleId) {
 

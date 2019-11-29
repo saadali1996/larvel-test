@@ -5,7 +5,7 @@ return [
     ['name' => 'branding.site_description', 'value' => "MTDb, the world's most popular and authoritative source for movie, TV and celebrity content."],
 
     // other
-    ['name' => 'site.force_https', 'value' => 0],
+    ['name' => 'site.force_https', 'value' => false],
 
     // menus
     ['name' => 'menus', 'value' => json_encode([
@@ -46,13 +46,27 @@ return [
     ['name' => 'uploads.blocked_extensions', 'value' => json_encode(['exe', 'application/x-msdownload', 'x-dosexec'])],
 
     // content
-    ['name' => 'news.auto_update', 'value' => 0],
-    ['name' => 'content.automation', 'value' => 0],
+    ['name' => 'news.auto_update', 'value' => false],
     ['name' => 'tmdb.language', 'value' => 'en'],
-    ['name' => 'titles.show_videos_panel', 'value' => 0],
-    ['name' => 'titles.enable_reviews', 'value' => 1],
+    ['name' => 'tmdb.includeAdult', 'value' => false],
+    ['name' => 'titles.video_panel_mode', 'value' => 'carousel'],
+    ['name' => 'streaming.video_panel_content', 'value' => 'all'],
+    ['name' => 'streaming.related_videos_type', 'value' => 'other_titles'],
+    ['name' => 'player.show_next_episodes', 'value' => false],
+    ['name' => 'titles.enable_reviews', 'value' => true],
     ['name' => 'homepage.list_items_count', 'value' => 10],
-    ['name' => 'homepage.lists', 'value' => json_encode([1, 2, 3, 4])],
+    ['name' => 'homepage.slider_items_count', 'value' => 5],
+    ['name' => 'homepage.autoslide', 'value' => true],
+    ['name' => 'streaming.default_sort', 'value' => 'order:asc'],
+    ['name' => 'streaming.show_captions_panel', 'value' => false],
+    ['name' => 'streaming.show_category_select', 'value' => false],
+    ['name' => 'streaming.streaming.auto_approve', 'value' => true],
+    ['name' => 'streaming.streaming.show_header_play', 'value' => false],
+    ['name' => 'content.people_index_min_popularity', 'value' => 0],
+    ['name' => 'content.search_provider', 'value' => 'local'],
+    ['name' => 'content.title_provider', 'value' => 'local'],
+    ['name' => 'content.people_provider', 'value' => 'local'],
+    ['name' => 'content.list_provider', 'value' => 'local'],
     ['name' => 'browse.genres', 'value' => json_encode([
         'drama', 'action', 'thriller', 'comedy',
         'science fiction', 'horror', 'mystery', 'romance',
@@ -63,4 +77,44 @@ return [
             'g', 'pg', 'pg-13', 'r', 'nc-17'
         ]
     )],
+
+    // HOMEPAGE APPEARANCE
+    ['name' => 'landing.appearance', 'value' => json_encode([
+        'headerTitle' => 'Watch on Any Device',
+        'headerSubtitle' => 'Stream on your phone, tablet, laptop, PC and TV without paying more. First month is free!',
+        'actions' => [
+            'cta1' => 'Join Now',
+        ],
+        'primaryFeatures' => [
+            [
+                'title' => 'High Quality',
+                'subtitle' => 'Never run out of things to watch. Hundreds of movies and TV series available in HD.',
+                'image' => 'hd',
+            ],
+            [
+                'title' => 'Multiple User',
+                'subtitle' => 'No need for multiple accounts. Friends and family can share the same account.',
+                'image' => 'people',
+            ],
+            [
+                'title' => 'Discover',
+                'subtitle' => 'Find new things to watch based on your preferences and other user ratings.',
+                'image' => 'rate-review',
+            ]
+        ],
+        'secondaryFeatures' => [
+            [
+                'title' => 'Watch Anytime, Anywhere. From Any Device.',
+                'subtitle' => 'COMPLETE FREEDOM',
+                'description' => 'Watch TV Shows And Movies on Smart TVs, Consoles, Chromecast, Apple TV, Phone, Tablet or Browser.',
+                'image' => 'client/assets/images/landing/endgame.jpg',
+            ],
+            [
+                'title' => 'Cancel Online Anytime.',
+                'subtitle' => 'No COMMITMENTS',
+                'description' => 'If you decide MTDb isn\'t for you - no problem. No commitment. Cancel online at anytime.',
+                'image' => 'client/assets/images/landing/wick.jpg',
+            ]
+        ]
+    ])],
 ];

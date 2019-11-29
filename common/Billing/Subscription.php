@@ -1,22 +1,27 @@
 <?php namespace Common\Billing;
 
+use App;
 use App\User;
 use Common\Billing\Gateways\Contracts\GatewayInterface;
 use Common\Billing\Gateways\GatewayFactory;
 use Carbon\Carbon;
+use Common\Billing\Invoices\Invoice;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
 /**
  * Class Subscription
  *
- * @property \Carbon\Carbon|null $trial_ends_at
- * @property \Carbon\Carbon|null $ends_at
- * @property \Carbon\Carbon|null $renews_at
- * @property-read \App\User $user
+ * @property Carbon|null $trial_ends_at
+ * @property Carbon|null $ends_at
+ * @property Carbon|null $renews_at
+ * @property-read User $user
  * @property-read BillingPlan $plan
+ * @property-read Invoice $latest_invoice
  * @property string $gateway
  * @property string $gateway_id
+ * @property integer $user_id
  */
 class Subscription extends Model
 {
@@ -74,6 +79,12 @@ class Subscription extends Model
     public function plan()
     {
         return $this->belongsTo(BillingPlan::class);
+    }
+
+    public function latest_invoice()
+    {
+        return $this->hasOne(Invoice::class)
+            ->orderBy('created_at', 'desc');
     }
 
     /**
@@ -186,7 +197,7 @@ class Subscription extends Model
      * Cancel the subscription immediately and delete it from database.
      *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
     public function cancelAndDelete()
     {
@@ -200,8 +211,6 @@ class Subscription extends Model
      * Resume the cancelled subscription.
      *
      * @return $this
-     * @throws \LogicException
-     * @throws GatewayException
      */
     public function resume()
     {
@@ -255,6 +264,6 @@ class Subscription extends Model
      */
     public function gateway()
     {
-        return \App::make(GatewayFactory::class)->get($this->gateway);
+        return App::make(GatewayFactory::class)->get($this->gateway);
     }
 }

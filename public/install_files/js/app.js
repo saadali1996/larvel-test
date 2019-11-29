@@ -1,11 +1,10 @@
 var app = new Vue({
     el: '#app',
     created: function() {
-        this.$vuetify.theme.primary = '#f44336';
+        this.$vuetify.theme.primary = '#1565c0';
     },
     data: function() {
         return {
-            appName: 'MTDb',
             errorMessage: null,
             loading: false,
 
@@ -13,7 +12,7 @@ var app = new Vue({
             steps: {
                 introduction: {
                     number: 1,
-                    completed: true,
+                    completed: true
 
                 },
                 requirements: {
@@ -28,15 +27,15 @@ var app = new Vue({
                 },
                 database: {
                     number: 4,
-                    completed: false,
+                    completed: false
                 },
                 admin: {
                     number: 5,
-                    completed: false,
+                    completed: false
                 },
                 final: {
                     number: 6,
-                    completed: false,
+                    completed: false
                 }
             },
 
@@ -45,19 +44,20 @@ var app = new Vue({
                 db_database: '',
                 db_username: 'root',
                 db_password: '',
-                db_prefix: '',
+                db_prefix: ''
             },
 
             adminForm: {
                 username: '',
                 email: '',
                 password: '',
-                password_confirmation: '',
+                password_confirmation: ''
             }
         }
     },
     computed: {
-        canGoToNextStep() {
+
+        canGoToNextStep: function() {
             var vue = this;
             var key = Object.keys(this.steps).find(function(key) {
                 return vue.steps[key].number === vue.currentStep;
@@ -66,7 +66,7 @@ var app = new Vue({
         }
     },
     watch: {
-        currentStep(stepNumber, oldStep) {
+        currentStep: function(stepNumber, oldStep) {
             if (stepNumber === this.steps.requirements.number) {
                 this.checkRequirements();
             } else if (stepNumber === this.steps.filesystem.number) {
@@ -76,11 +76,11 @@ var app = new Vue({
         }
     },
     methods: {
-        nextStep() {
+        nextStep: function() {
             this.currentStep = this.currentStep + 1;
         },
 
-        checkRequirements(nextStep) {
+        checkRequirements: function(nextStep) {
             var vue = this;
             this.callBackend('onCheckRequirements').then(function(response) {
                 if ( ! response) return;
@@ -92,7 +92,7 @@ var app = new Vue({
             });
         },
 
-        checkFilesystem(nextStep) {
+        checkFilesystem: function(nextStep) {
             var vue = this;
             this.callBackend('onCheckFileSystem').then(function(response) {
                 if ( ! response) return;
@@ -104,7 +104,7 @@ var app = new Vue({
             });
         },
 
-        validateAndInsertDatabaseCredentials() {
+        validateAndInsertDatabaseCredentials: function() {
             var vue = this;
             this.callBackend('onValidateAndInsertDatabaseCredentials', this.databaseForm).then(function() {
                 if ( ! vue.errorMessage) {
@@ -114,7 +114,7 @@ var app = new Vue({
             });
         },
 
-        validateAdminCredentials() {
+        validateAdminCredentials: function() {
             var vue = this;
             this.callBackend('onValidateAdminCredentials').then(function() {
                 if ( ! vue.errorMessage) {
@@ -124,7 +124,7 @@ var app = new Vue({
             });
         },
 
-        installApplication() {
+        installApplication: function() {
             var vue = this;
             this.callBackend('onInstallApplication', vue.adminForm).then(function() {
                 if ( ! vue.errorMessage) {
@@ -133,13 +133,13 @@ var app = new Vue({
             });
         },
 
-        noIssues(results) {
+        noIssues: function(results) {
             return !Object.keys(results).some(function(key) {
                 return !results[key].result;
             });
         },
 
-        callBackend(handler, params) {
+        callBackend: function(handler, params) {
             this.loading = true;
 
             var vue = this;

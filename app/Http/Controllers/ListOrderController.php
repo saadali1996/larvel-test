@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Listable;
 use App\ListModel;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use DB;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ListOrderController extends Controller
+class ListOrderController extends BaseController
 {
     /**
      * @var ListModel
@@ -32,7 +33,7 @@ class ListOrderController extends Controller
 
     /**
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function changeOrder($id) {
 

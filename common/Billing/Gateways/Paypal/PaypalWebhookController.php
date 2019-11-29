@@ -1,10 +1,12 @@
 <?php namespace Common\Billing\Gateways\Paypal;
 
+use Common\Billing\Invoices\CrupdateInvoice;
 use Common\Billing\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Common\Billing\Gateways\GatewayFactory;
 use Illuminate\Support\Arr;
+use Symfony\Component\HttpFoundation\Response;
 
 class PaypalWebhookController extends Controller
 {
@@ -19,8 +21,6 @@ class PaypalWebhookController extends Controller
     private $subscription;
 
     /**
-     * PaypalWebhookController constructor.
-     *
      * @param GatewayFactory $gatewayFactory
      * @param Subscription $subscription
      */
@@ -33,8 +33,8 @@ class PaypalWebhookController extends Controller
     /**
      * Handle a paypal webhook call.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param Request $request
+     * @return Response
      */
     public function handleWebhook(Request $request)
     {
@@ -59,7 +59,7 @@ class PaypalWebhookController extends Controller
      * Handle a cancelled customer from a paypal subscription.
      *
      * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return Response
      */
     protected function handleSubscriptionCancelled($payload)
     {
@@ -78,7 +78,7 @@ class PaypalWebhookController extends Controller
      * Handle a renewed stripe subscription.
      *
      * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return Response
      */
     protected function handleSubscriptionRenewed($payload)
     {
@@ -89,6 +89,10 @@ class PaypalWebhookController extends Controller
         if ($subscription) {
             $paypalSubscription = $this->gateway->subscriptions()->find($subscription);
             $subscription->fill(['renews_at' => $paypalSubscription['renews_at']])->save();
+            app(CrupdateInvoice::class)->execute([
+                'subscription_id' => $subscription->id,
+                'paid' => true,
+            ]);
         }
 
         return response('Webhook Handled', 200);

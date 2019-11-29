@@ -3,10 +3,12 @@
 namespace App\Services\Titles\Retrieve;
 
 use App\Title;
+use Carbon\Carbon;
 use Common\Database\Paginator;
 use Common\Settings\Settings;
 use DB;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -34,19 +36,36 @@ class PaginateTitles
 
     /**
      * @param array $params
-     * @return \Illuminate\Pagination\LengthAwarePaginator
+     * @return LengthAwarePaginator
      */
     public function execute($params)
     {
-        $paginator = new Paginator($this->title);
-        $paginator->where('adult', false);
+        if ($order = Arr::get($params, 'order')) {
+            $order = str_replace('user_score', config('common.site.rating_column'), $order);
+            $params['order'] = $order;
+        }
+
+        $paginator = new Paginator($this->title, $params);
+
+        if ( ! $this->settings->get('tmdb.includeAdult')) {
+            $paginator->where('adult', false);
+        }
+
+        $paginator->searchCallback = function(Builder $builder, $query) {
+            $builder->whereRaw("MATCH(name) AGAINST('$query')");
+        };
+
+        if ($this->settings->get('streaming.show_label')) {
+            $paginator->withCount('stream_videos');
+        }
+
         $paginator->setDefaultOrderColumns('popularity', 'desc');
 
-        if ($type = Arr::get($params, 'type')) {
+        if ($type = $paginator->param('type')) {
             $paginator->where('is_series', $type === Title::SERIES_TYPE);
         }
 
-        if ($genre = Arr::get($params, 'genre')) {
+        if ($genre = $paginator->param('genre')) {
             $genres = explode(',', $genre);
             $paginator->query()->whereHas('genres', function(Builder $query) use($genres) {
                 $genres = array_map(function($genre) {
@@ -56,55 +75,48 @@ class PaginateTitles
             });
         }
 
-        if ($released = Arr::get($params, 'released')) {
+        if ($released = $paginator->param('released')) {
             $this->byReleaseDate($released, $paginator);
         }
 
-        if ($runtime = Arr::get($params, 'runtime')) {
+        if ($runtime = $paginator->param('runtime')) {
             $this->byRuntime($runtime, $paginator);
         }
 
-        if ($score = Arr::get($params, 'score')) {
+        if ($score = $paginator->param('score')) {
             $this->byRating($score, $paginator);
         }
 
-        if ($language = Arr::get($params, 'language')) {
+        if ($language = $paginator->param('language')) {
             $paginator->query()->where('language', $language);
         }
 
-        if ($certification = Arr::get($params, 'certification')) {
+        if ($certification = $paginator->param('certification')) {
             $paginator->query()->where('certification', $certification);
         }
 
-        if ($country = Arr::get($params, 'country')) {
+        if ($country = $paginator->param('country')) {
             $paginator->query()->whereHas('countries', function(Builder $query) use($country) {
                 $query->where('name', $country);
             });
         }
 
-        if ($onlyStreamable = Arr::get($params, 'onlyStreamable')) {
-            $paginator->query()->whereHas('allVideos', function(Builder $query) use($country) {
-                $query->where('source', 'local');
+        if ($onlyStreamable = $paginator->param('onlyStreamable')) {
+            // $paginator->query()->whereHas('stream_videos');
+            $paginator->query()->whereIn('titles.id', function($query) {
+                $query->from('videos')
+                    ->select('videos.title_id')
+                    ->where('approved', true)
+                    ->where('source', 'local');
             });
         }
 
-        if ($order = Arr::get($params, 'order')) {
-            $order = str_replace('date_added', 'created_at', $order);
-            $order = str_replace('user_score', config('common.site.rating_column'), $order);
-
-            // show titles with less then 50 votes on tmdb last, regardless of their average
-            if (str_contains($order, 'tmdb_vote_average')) {
-                $paginator->query()->orderBy(DB::raw('tmdb_vote_count > 100'), 'desc');
-            }
-
-            $params['order'] = $order;
+        // show titles with less then 50 votes on tmdb last, regardless of their average
+        if (str_contains(Arr::get($params, 'order', ''), 'tmdb_vote_average')) {
+            $paginator->query()->orderBy(DB::raw('tmdb_vote_count > 100'), 'desc');
         }
 
-        if ( ! isset($params['perPage'])) {
-            $params['perPage'] = 16;
-        }
-
-        return $paginator->paginate($params);
+        return $paginator->paginate();
     }
 
     private function byRuntime($runtimes, Paginator $paginator)
@@ -122,9 +134,14 @@ class PaginateTitles
         $parts = explode(',', $dates);
         if (count($parts) !== 2) return;
 
+        // convert year to full date, otherwise same year range would not work
+        // 2019,2019 => 2019-01-01,2019-12-31
+        $from = Carbon::create($parts[0])->firstOfYear();
+        $to = Carbon::create($parts[1])->lastOfYear();
+
         $paginator->query()
-            ->where('release_date', '>=', $parts[0])
-            ->where('release_date', '<=', $parts[1]);
+            ->where('release_date', '>=', $from)
+            ->where('release_date', '<=', $to);
     }
 
     private function byRating($scores, Paginator $paginator)
@@ -132,7 +149,7 @@ class PaginateTitles
         $parts = explode(',', $scores);
         if (count($parts) !== 2) return;
 
-        if ($this->settings->get('content.automation')) {
+        if ($this->settings->get('content.title_provider') !== TITLE::LOCAL_PROVIDER) {
             $paginator->query()
                 ->where('tmdb_vote_average', '>=', $parts[0])
                 ->where('tmdb_vote_average', '<=', $parts[1])

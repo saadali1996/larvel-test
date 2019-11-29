@@ -22,6 +22,7 @@ class UpdateEpisodesTableToV2 extends Migration
             $table->integer('popularity')->unsigned()->nullable()->index();
             $table->renameColumn('plot', 'description');
             $table->renameColumn('title', 'name');
+            $table->index('title_id');
 
             if (Schema::hasColumn('episodes', 'promo')) {
                 $table->dropColumn('promo');

@@ -1,10 +1,10 @@
 <?php namespace Common\Auth\Roles;
 
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Auth\UserRepository;
 
-class UserRolesController extends Controller
+class UserRolesController extends BaseController
 {
     /**
      * UserRepository instance.

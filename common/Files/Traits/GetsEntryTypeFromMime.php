@@ -23,7 +23,7 @@ trait GetsEntryTypeFromMime
                 return 'pdf';
             case 'vnd.android.package-archive':
                 return 'android package';
-            case str_contains($mime, ['xls', 'excel']):
+            case str_contains($mime, ['xls', 'excel', 'spreadsheetml']):
                 return 'spreadsheet';
             case str_contains($mime, 'photoshop'):
                 return 'photoshop';

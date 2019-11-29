@@ -37,7 +37,7 @@ return [
                     'template' => [
                         '@type' => 'ListItem',
                         'position' => '{{TITLE.PIVOT.ORDER}}',
-                        "url" => "{{URL.TITLE}}"
+                        "url" => "{{URL.MEDIA_ITEM}}"
                     ]
                 ],
             ],

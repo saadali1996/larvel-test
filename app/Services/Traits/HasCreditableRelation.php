@@ -4,11 +4,12 @@ namespace App\Services\Traits;
 
 use App\Person;
 use DB;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait HasCreditableRelation
 {
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function credits()
     {
@@ -21,6 +22,6 @@ trait HasCreditableRelation
         // writers and creators, even if limit is applied to this query
         $prefix = DB::getTablePrefix();
         return $query->orderBy(DB::raw("FIELD(department, 'directing', 'creators', 'writing', 'cast')"))
-            ->orderBy(DB::raw("-{$prefix}creditables.order"), 'desc');
+            ->orderBy(DB::raw("-{$prefix}creditables.order"), 'desc'); // should be "desc" and not "asc" because "minus" is added which will reverse order
     }
 }

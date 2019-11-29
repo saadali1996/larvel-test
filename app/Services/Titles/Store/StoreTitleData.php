@@ -8,6 +8,7 @@ use App\Season;
 use App\Services\Traits\StoresMediaImages;
 use App\Title;
 use App\Video;
+use Carbon\Carbon;
 use Common\Tags\Tag;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -177,6 +178,8 @@ class StoreTitleData
             $uniqueKey = strtolower($value['name']);
             $value['title_id'] = $this->title->id;
             $value['order'] = $i;
+            $value['created_at'] = Carbon::now();
+            $value['updated_at'] = Carbon::now();
             if (in_array($uniqueKey, $exists)) {
                 return null;
             } else {
@@ -187,7 +190,7 @@ class StoreTitleData
 
         $this->video->where('source', '!=', 'local')
             ->where('title_id', $this->title->id)
-            ->whereNull('episode_id')
+            ->whereNull('episode')
             ->delete();
 
         $this->video->insert($mediaItems->toArray());

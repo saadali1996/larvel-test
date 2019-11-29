@@ -1,12 +1,11 @@
 <?php namespace App\Services\Admin;
 
 use Common\Core\Contracts\AppUrlGenerator;
-use Common\Pages\Page;
 use App;
+use Common\Pages\CustomPage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Storage;
 use Carbon\Carbon;
 use Common\Settings\Settings;
@@ -74,7 +73,7 @@ class SitemapGenerator {
             'wheres' => ['type' => 'news_article'],
         ],
         [
-            'model' => Page::class,
+            'model' => CustomPage::class,
             'columns' => ['id', 'title', 'slug'],
             'wheres' => ['type' => 'default'],
         ],

@@ -1,34 +1,40 @@
 <?php namespace Common\Core\Policies;
 
 use App\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Common\Pages\CustomPage;
 
-class PagePolicy
+class PagePolicy extends BasePolicy
 {
-    use HandlesAuthorization;
-
     public function index(User $user)
     {
-        return $user->hasPermission('pages.view');
+        return $user->hasPermission('custom_pages.view');
     }
 
     public function show(User $user)
     {
-        return $user->hasPermission('pages.view');
+        return $user->hasPermission('custom_pages.view');
     }
 
     public function store(User $user)
     {
-        return $user->hasPermission('pages.create');
+        return $this->storeWithCountRestriction($user, CustomPage::class, 'link_custom_pages');
     }
 
     public function update(User $user)
     {
-        return $user->hasPermission('pages.update');
+        return $user->hasPermission('custom_pages.update');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, $pageIds)
     {
-        return $user->hasPermission('pages.delete');
+        if ($user->hasPermission('custom_pages.delete')) {
+            return true;
+        } else {
+            $dbCount = app(CustomPage::class)
+                ->whereIn('id', $pageIds)
+                ->where('user_id', $user->id)
+                ->count();
+            return $dbCount === count($pageIds);
+        }
     }
 }

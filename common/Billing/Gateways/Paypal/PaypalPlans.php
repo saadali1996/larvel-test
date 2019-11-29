@@ -39,7 +39,11 @@ class PaypalPlans implements GatewayPlansInterface
 
             $paypalPlan = $response->getData();
 
-            return empty($paypalPlan) ? null : $paypalPlan;
+            if (empty($paypalPlan) || ! $response->isSuccessful()) {
+                return null;
+            } else {
+                return $paypalPlan;
+            }
         }
 
         // legacy, before paypal plan ID was stored on billing plan model
@@ -83,7 +87,7 @@ class PaypalPlans implements GatewayPlansInterface
 
         // legacy, before paypal plan ID was stored on billing plan model
         if ( ! $paypalPlan = $this->find($plan)) {
-            throw new GatewayException("Could not find plan '{$plan->name}' on paypal");
+            throw new GatewayException("Could not find plan '{$plan->name}' on paypal. Try to sync plans from 'admin -> plans' page.");
         }
 
         return $paypalPlan['id'];
@@ -109,7 +113,7 @@ class PaypalPlans implements GatewayPlansInterface
                     'frequency'          => strtoupper($plan->interval),
                     'frequency_interval' => $plan->interval_count,
                     'cycles'             => 0,
-                    'amount'             => ['value' => $plan->amount, 'currency' => strtoupper($plan->currency)],
+                    'amount'             => ['value' => number_format($plan->amount, 2), 'currency' => strtoupper($plan->currency)], // paypal does not accept floats, need to convert amount to string
                 ],
             ],
             'merchant_preferences' => [

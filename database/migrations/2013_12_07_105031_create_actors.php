@@ -25,7 +25,7 @@ class CreateActors extends Migration {
 			$table->string('image', 255)->nullable();			
 			$table->string('imdb_id', 255)->nullable();
 			$table->bigInteger('views')->default(1);
-			$table->bigInteger('tmdb_id')->unsigned()->nullable();
+			$table->bigInteger('tmdb_id')->unsigned()->nullable()->unique();
 			$table->tinyInteger('fully_scraped')->default(0)->unsigned();
 			$table->tinyInteger('allow_update')->default(1)->unsigned();
 			$table->timestamp('created_at')->nullable();
@@ -34,6 +34,7 @@ class CreateActors extends Migration {
 
             $table->collation = config('database.connections.mysql.collation');
             $table->charset = config('database.connections.mysql.charset');
+            $table->engine = 'InnoDB';
 		});
 	}
 

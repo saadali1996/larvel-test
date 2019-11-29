@@ -1,6 +1,6 @@
 <?php namespace App\Http\Controllers;
 
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Settings\DotEnvEditor;
 use Common\Settings\Setting;
 use DB;
@@ -8,9 +8,12 @@ use Auth;
 use Cache;
 use Artisan;
 use Exception;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 use Schema;
 
-class UpdateController extends Controller {
+class UpdateController extends BaseController {
     /**
      * @var DotEnvEditor
      */
@@ -22,8 +25,6 @@ class UpdateController extends Controller {
     private $setting;
 
     /**
-     * UpdateController constructor.
-     *
      * @param DotEnvEditor $dotEnvEditor
      * @param Setting $setting
      */
@@ -33,16 +34,14 @@ class UpdateController extends Controller {
         $this->dotEnvEditor = $dotEnvEditor;
 
         if ( ! config('common.site.disable_update_auth') && version_compare(config('common.site.version'), $this->getAppVersion()) === 0) {
-            if ( ! Auth::check() || ! Auth::user()->hasPermission('admin')) {
-                abort(403);
-            }
+            $this->middleware('isAdmin');
         }
     }
 
     /**
      * Show update view.
      *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @return Factory|View
      */
     public function show()
     {
@@ -52,7 +51,7 @@ class UpdateController extends Controller {
     /**
      * Perform the update.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function update()
 	{
@@ -63,10 +62,8 @@ class UpdateController extends Controller {
         Artisan::call('db:seed', ['--force' => 'true']);
         Artisan::call('common:seed');
 
-        Artisan::call('watchlist:create');
-
         $version = $this->getAppVersion();
-        $this->dotEnvEditor->write(['app_version' => $version]);
+        $this->dotEnvEditor->write(['app_version' => $version, 'billing_enabled' => true]);
 
         Cache::flush();
 
@@ -83,7 +80,7 @@ class UpdateController extends Controller {
         try {
             return $this->dotEnvEditor->load(base_path('.env.example'))['app_version'];
         } catch (Exception $e) {
-            return '3.1.3';
+            return '3.2.0';
         }
     }
 }

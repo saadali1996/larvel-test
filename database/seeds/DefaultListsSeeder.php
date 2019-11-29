@@ -2,6 +2,7 @@
 
 use App\ListModel;
 use App\User;
+use Common\Settings\Settings;
 use Illuminate\Database\Seeder;
 
 class DefaultListsSeeder extends Seeder
@@ -22,16 +23,23 @@ class DefaultListsSeeder extends Seeder
     private $userId;
 
     /**
+     * @var Settings
+     */
+    private $settings;
+
+    /**
      * @param ListModel $list
      * @param User $user
+     * @param Settings $settings
      */
-    public function __construct(ListModel $list, User $user)
+    public function __construct(ListModel $list, User $user, Settings $settings)
     {
         $this->list = $list;
         $this->user = $user;
 
         $admin = $this->user->orderBy('created_at', 'desc')->first();
         $this->userId = $admin ? $admin->id : 1;
+        $this->settings = $settings;
     }
 
     /**
@@ -65,6 +73,9 @@ class DefaultListsSeeder extends Seeder
             'description' => 'Movies that are currently playing in theaters.',
         ]);
 
+        $this->settings->save([
+            ['name' => 'homepage.lists', 'value' => json_encode([1, 2, 3, 4])],
+        ]);
     }
 
     private function createList($params)

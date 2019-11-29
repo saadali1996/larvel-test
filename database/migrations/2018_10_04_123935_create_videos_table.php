@@ -21,14 +21,13 @@ class CreateVideosTable extends Migration
             $table->string('type', 50);
             $table->string('quality', 50)->nullable();
             $table->integer('title_id')->unsigned()->index();
-            $table->integer('episode_id')->unsigned()->nullable()->index();
             $table->integer('season')->nullable()->unsigned()->index();
             $table->integer('episode')->nullable()->unsigned()->index();
             $table->string('source')->default('local')->index();
             $table->integer('negative_votes')->unsigned()->default(0);
             $table->integer('positive_votes')->unsigned()->default(0);
             $table->integer('reports')->unsigned()->default(0);
-            $table->integer('approved')->unsigned()->default(1);
+            $table->integer('approved')->unsigned()->default(1)->index();
             $table->integer('order')->unsigned()->default(0)->index();
             $table->timestamps();
 

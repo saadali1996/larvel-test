@@ -5,10 +5,12 @@ namespace App\Services\Data\Tmdb;
 use App\Person;
 use App\Services\Data\Contracts\DataProvider;
 use App\Title;
+use Carbon\Carbon;
 use Common\Settings\Settings;
 use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Log;
 
 class TmdbApi implements DataProvider
@@ -44,12 +46,18 @@ class TmdbApi implements DataProvider
 
     public function getPerson(Person $person)
     {
-        $appends = ['combined_credits', 'images', 'tagged_images'];
+        $appends = ['images', 'tagged_images'];
+
+        // only import filmography if it's set by user
+        if ($this->settings->get('content.automate_filmography')) {
+            $appends[] = 'combined_credits';
+        }
 
         $response = $this->call(
             "person/{$person->tmdb_id}",
             ['append_to_response' => implode(',', $appends)]
         );
+        $response['fully_synced'] = true;
 
         return app(TransformData::class)->execute([$response])->first();
     }
@@ -93,7 +101,7 @@ class TmdbApi implements DataProvider
     /**
      * @param $query
      * @param array $params
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function search($query, $params = [])
     {
@@ -120,40 +128,82 @@ class TmdbApi implements DataProvider
         $titleCategory = snake_case($titleCategory);
         $uri = $titleType . '/' . $titleCategory;
 
-        $validUris = [
-            'movie/popular',
-            'movie/top_rated',
-            'movie/upcoming',
-            'movie/now_playing',
-            'tv/popular',
-            'tv/top_rated',
-            'tv/on_the_air',
-            'tv/airing_today',
-        ];
-
-        if (array_search($uri, $validUris) === false) {
-            Log::error("Trying to fetch titles from '$uri', but this uri is not valid.");
-            return collect();
+        switch ($uri) {
+            case 'movie/popular':
+                $from = Carbon::now()->subMonths(6)->format('Y-m-d');
+                $titleFilters = ['sort_by' => 'popularity.desc', 'primary_release_date.gte' => $from];
+                break;
+            case 'movie/top_rated':
+                $titleFilters = ['sort_by' => 'vote_average.desc', 'vote_count.gte' => 600];
+                break;
+            case 'movie/upcoming':
+                $from = Carbon::now()->subDay()->format('Y-m-d');
+                $to = Carbon::now()->addMonth()->format('Y-m-d');
+                $titleFilters = [
+                    'sort_by' => 'popularity.desc',
+                    'with_release_type' => '2,3',
+                    'primary_release_date.gte' => $from,
+                    'primary_release_date.lte' => $to,
+                ];
+                break;
+            case 'movie/now_playing':
+                $from = Carbon::now()->subMonth(2)->format('Y-m-d');
+                $to = Carbon::now()->subDay(2)->format('Y-m-d');
+                $titleFilters = [
+                    'sort_by' => 'popularity.desc',
+                    'with_release_type' => '2,3',
+                    'primary_release_date.gte' => $from,
+                    'primary_release_date.lte' => $to,
+                ];
+                break;
+            case 'tv/popular':
+                $titleFilters = ['sort_by' => 'popularity.desc'];
+                break;
+            case 'tv/top_rated':
+                $titleFilters = ['sort_by' => 'vote_average.desc', 'vote_count.gte' => 600];
+                break;
+            case 'tv/on_the_air':
+                $from = Carbon::now()->startOfDay()->format('Y-m-d');
+                $to = Carbon::now()->startOfDay()->addDays(6)->format('Y-m-d');
+                $titleFilters = [
+                    'sort_by' => 'popularity.desc',
+                    'air_date.gte' => $from,
+                    'air_date.lte' => $to,
+                ];
+                break;
+            case 'tv/airing_today':
+                $from = Carbon::now()->startOfDay()->format('Y-m-d');
+                $to = Carbon::now()->endOfDay()->format('Y-m-d');
+                $titleFilters = [
+                    'sort_by' => 'popularity.desc',
+                    'air_date.gte' => $from,
+                    'air_date.lte' => $to,
+                ];
+                break;
+            default:
+                Log::error("Trying to fetch titles from '$uri', but this uri is not valid.");
+        }
+        if (isset($titleFilters)) {
+            return $this->browse(1, $titleType, $titleFilters)['results'];
         }
 
-        $response = $this->call($uri);
-        return app(TransformData::class)->execute($response['results']);
+        return [];
     }
 
     public function browse($page = 1, $type = 'movie', $queryParams = [])
     {
-        if ($page > 1000) {
-            throw new Exception('Maximum page is 1000');
+        if ($page > 500) {
+            throw new Exception('Maximum page is 500');
         }
 
         $apiParams = array_merge(
-            $queryParams,
-            ['sort_by' => 'popularity.desc', 'page' => $page]
+            ['sort_by' => 'popularity.desc', 'page' => $page],
+            $queryParams
         );
 
         $response = $this->call("discover/$type", $apiParams);
-
         $response['results'] = app(TransformData::class)->execute($response['results']);
+
         return $response;
     }
 
@@ -168,7 +218,8 @@ class TmdbApi implements DataProvider
         $url = self::TMDB_BASE . "$uri?api_key=$key";
 
         $queryParams = array_merge($queryParams, [
-            'include_adult' => $this->includeAdult,
+            // need to send "true" and not "1" otherwise tmdb will not work
+            'include_adult' => $this->includeAdult ? 'true' : 'false',
             'language' => $this->language,
             'region' => 'US',
             'include_image_language' => 'en,null'

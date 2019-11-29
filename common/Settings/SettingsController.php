@@ -1,13 +1,15 @@
 <?php namespace Common\Settings;
 
+use Exception;
 use File;
 use Artisan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
+use ReflectionClass;
 
-class SettingsController extends Controller {
+class SettingsController extends BaseController {
 
     /**
      * Settings service instance.
@@ -59,8 +61,8 @@ class SettingsController extends Controller {
     {
         $this->authorize('update', Setting::class);
 
-        $clientSettings = json_decode(base64_decode($this->request->get('client')), true);
-        $serverSettings = json_decode(base64_decode($this->request->get('server')), true);
+        $clientSettings = json_decode($this->request->get('client'), true);
+        $serverSettings = json_decode($this->request->get('server'), true);
 
         // need to handle files before validating
         // TODO: maybe refactor this, if need to handle
@@ -113,8 +115,18 @@ class SettingsController extends Controller {
         foreach ($validators as $validator) {
             if (empty(array_intersect($validator::KEYS, $keys))) continue;
 
-            if ($messages = app($validator)->fails($values)) {
-                return $this->error($messages);
+            try {
+                if ($messages = app($validator)->fails($values)) {
+                    return $this->error($messages);
+                }
+
+            // catch and display any generic error that might occur
+            } catch (Exception $e) {
+                // Common\Settings\Validators\GoogleLoginValidator => GoogleLoginValidator
+                $class = (new ReflectionClass($validator))->getShortName();
+                // GoogleLoginValidator => google-login-validator => google => google_group
+                $groupName = explode('-', kebab_case($class))[0] . '_group';
+                return $this->error([$groupName => str_limit($e->getMessage(), 200)]);
             }
         }
     }

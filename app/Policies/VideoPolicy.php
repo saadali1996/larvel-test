@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\User;
+use App\Video;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class VideoPolicy
@@ -34,8 +35,16 @@ class VideoPolicy
         return $user->hasPermission('videos.update');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, $videoIds)
     {
-        return $user->hasPermission('videos.delete');
+        if ($user->hasPermission('videos.delete')) {
+            return true;
+        } else {
+            $dbCount = app(Video::class)
+                ->whereIn('id', $videoIds)
+                ->where('user_id', $user->id)
+                ->count();
+            return $dbCount === count($videoIds);
+        }
     }
 }

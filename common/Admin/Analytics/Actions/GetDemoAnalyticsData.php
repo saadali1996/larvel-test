@@ -7,10 +7,10 @@ use Common\Admin\Analytics\Actions\GetAnalyticsData;
 
 class GetDemoAnalyticsData implements GetAnalyticsData
 {
-    public function execute() {
+    public function execute($channel) {
         return [
             'weeklyPageViews' => [
-                'current' => $this->getWeekly(Carbon::now()),
+                'current' => $this->getWeekly(Carbon::now(), true),
                 'previous' => $this->getWeekly(Carbon::now()->subWeek()),
             ],
             'monthlyPageViews' => [
@@ -28,10 +28,10 @@ class GetDemoAnalyticsData implements GetAnalyticsData
      * @param Carbon $date
      * @return array
      */
-    private function getWeekly($date)
+    private function getWeekly($date, $empty = false)
     {
         return $this->getPageViews(
-            $date->startOfWeek(), 7
+            $date->startOfWeek(), 7, $empty
         );
     }
 
@@ -53,7 +53,7 @@ class GetDemoAnalyticsData implements GetAnalyticsData
      * @param int $daysCount
      * @return array
      */
-    private function getPageViews(Carbon $date, $daysCount)
+    private function getPageViews(Carbon $date, $daysCount, $empty = false)
     {
         // remove one day because loop will start from day 2
         $date->subDay();
@@ -63,7 +63,7 @@ class GetDemoAnalyticsData implements GetAnalyticsData
         for ($i = 0; $i <= $daysCount - 1; $i++) {
             $data[$i] = [
                 'date' => $date->addDay()->getTimestamp(),
-                'pageViews' => random_int(100, 500)
+                'pageViews' => $empty ? 0 : random_int(100, 500)
             ];
         }
 

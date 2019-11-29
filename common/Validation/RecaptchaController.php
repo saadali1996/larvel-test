@@ -1,11 +1,11 @@
 <?php namespace Common\Validation;
 
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Settings\Settings;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
-class RecaptchaController extends Controller
+class RecaptchaController extends BaseController
 {
     /**
      * @var Request

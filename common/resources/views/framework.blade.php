@@ -6,37 +6,59 @@
         <base href="{{ $htmlBaseUri }}">
 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-        <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap" rel="stylesheet">
         <link rel="icon" type="image/x-icon" href="{{$settings->get('branding.favicon')}}">
+
+        @if($themes = $bootstrapData->get('themes'))
+            <script>
+                (function() {
+                    window.beThemes = JSON.parse('{!! json_encode($themes) !!}');
+
+                    @if ($settings->get('themes.user_change'))
+                        var storedBeTheme = localStorage && localStorage.getItem('{{ str_slug($settings->get('branding.site_name')) . '.theme'}}');
+                        window.beSelectedTheme = storedBeTheme ? JSON.parse(storedBeTheme) : '{{ $settings->get('themes.default_mode', 'light') }}';
+                    @else
+                        window.beSelectedTheme = '{{ $settings->get('themes.default_mode', 'light') }}';
+                    @endif
+
+                    var style = document.createElement('style');
+                    style.innerHTML = ':root ' + JSON.stringify(beThemes[beSelectedTheme].colors).replace(/"/g, '').replace(/,--/g, ';--');
+                    document.head.appendChild(style);
+                })();
+            </script>
+        @endif
 
         @yield('progressive-app-tags')
 
         @yield('angular-styles')
 
-        {{--custom theme begin--}}
-        @if ($settings->get('branding.use_custom_theme'))
-            <link rel="stylesheet" href="{{asset('storage/appearance/theme.css')}}">
+        @if (file_exists($customCssPath))
+            @if ($content = file_get_contents($customCssPath))
+                <style>{!! $content !!}</style>
+            @endif
         @endif
-        {{--custom theme end--}}
 
-        @if ($settings->has('custom_code.load_css'))
-            <link rel="stylesheet" href="{{asset('storage/custom-code/custom-styles.css')}}">
-        @endif
+        @yield('head-end')
 	</head>
 
-    <body id="theme">
+    <body>
         <app-root>
             @yield('before-loaded-content')
         </app-root>
 
         <script>
-            window.bootstrapData = "{!! $bootstrapData !!}";
+            if (window.beSelectedTheme === 'dark') {
+                document.documentElement.classList.add('be-dark-mode');
+            }
+            window.bootstrapData = "{!! $bootstrapData->getEncoded() !!}";
         </script>
 
         @yield('angular-scripts')
 
-        @if ($settings->has('custom_code.load_js'))
-            <script src="{{asset('storage/custom-code/custom-scripts.js')}}"></script>
+        @if (file_exists($customHtmlPath))
+            @if ($content = file_get_contents($customHtmlPath))
+                {!! $content !!}
+            @endif
         @endif
 
         @if ($code = $settings->get('analytics.tracking_code'))
@@ -52,5 +74,7 @@
         @endif
 
         <noscript>You need to have javascript enabled in order to use <strong>{{config('app.name')}}</strong>.</noscript>
+
+        @yield('body-end')
 	</body>
 </html>

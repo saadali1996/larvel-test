@@ -1,15 +1,17 @@
 <?php namespace Common\Settings;
 
+use Carbon\Carbon;
+use Eloquent;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
  * @property string $name
  * @property string $value
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property int $private
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Setting extends Model {
 
@@ -30,7 +32,15 @@ class Setting extends Model {
      */
     public function getValueAttribute($value)
     {
-        if ($value === '0' || $value === '1') {
+        if ($value === 'false') {
+            return false;
+        }
+
+        if ($value === 'true') {
+            return true;
+        }
+
+        if (ctype_digit($value)) {
             return (int) $value;
         }
 
@@ -38,14 +48,16 @@ class Setting extends Model {
     }
 
     /**
-     * Always cast value to string to avoid issues
-     * with large numbers and floats.
-     *
      * @param $value
      */
     public function setValueAttribute($value)
     {
-        if ($value) $value = (string) $value;
-        $this->attributes['value'] = $value;
+        if ($value === true) {
+            $value = 'true';
+        } else if ($value === false) {
+            $value = 'false';
+        }
+
+        $this->attributes['value'] = (string) $value;
     }
 }

@@ -3,10 +3,10 @@
 namespace App\Services\Titles\Retrieve;
 
 use App\Episode;
-use App\Services\Data\Contracts\DataProvider;
 use App\Services\Titles\LoadSeasonData;
 use App\Services\Titles\Store\StoreTitleData;
 use App\Title;
+use Common\Settings\Settings;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
@@ -23,7 +23,7 @@ class ShowTitle
         $title = app(FindOrCreateMediaItem::class)->execute($id, Title::TITLE_TYPE);
 
         if ($title->needsUpdating() && !Arr::get($params, 'skipUpdating')) {
-            $data = app(DataProvider::class)->getTitle($title);
+            $data = Title::dataProvider()->getTitle($title);
             $title = app(StoreTitleData::class)->execute($title, $data);
         }
 
@@ -31,11 +31,11 @@ class ShowTitle
             return $title;
         }
 
-        $videos = Arr::get($params, 'allVideos') ? 'allVideos' : 'videos';
-        $title->load(['images', $videos, 'genres', 'seasons' => function(HasMany $query) {
+        $title->load(['images', 'genres', 'seasons' => function(HasMany $query) {
             $query->select(['id', 'number', 'episode_count', 'title_id']);
         }]);
 
+        $this->loadVideos($title, $params);
         $this->loadCredits($title, $params);
 
         if (Arr::get($params, 'keywords')) {
@@ -60,7 +60,7 @@ class ShowTitle
         if (isset($season) && $episodeNumber = (int) Arr::get($params, 'episodeNumber')) {
             $season->episodes->first(function(Episode $episode) use($episodeNumber) {
                 return $episodeNumber === $episode->episode_number;
-            })->load('credits', 'videos');
+            })->load('credits');
         }
 
         $response = ['title' => $title];
@@ -74,6 +74,45 @@ class ShowTitle
         }
 
         return $response;
+    }
+
+    private function loadVideos(Title $title, $params)
+    {
+        $episode = (int) Arr::get($params, 'episodeNumber');
+        $season = (int) Arr::get($params, 'seasonNumber');
+        $allVideos = Arr::get($params, 'allVideos') ?: false;
+
+        $title->load(['videos' => function(HasMany $query) use($episode, $season, $allVideos) {
+            $query->with('captions');
+            // load all videos for admin without any constraints
+            if ($allVideos) {
+                return;
+            }
+
+            $query->where('approved', true);
+
+            // load for specific season
+            if ($season) {
+                $query->where('season', $season);
+            }
+
+            // load for specific episode
+            if ($episode) {
+                $query->where('episode', $episode);
+            }
+
+            // load only videos that are attached to main
+            // title and not a particular episode
+            if ( ! $season && ! $episode) {
+                $query->whereNull('episode');
+            }
+        }]);
+
+        // make sure videos are under same key always
+        if ($title->relationLoaded('stream_videos')) {
+            $title->setRelation('videos', $title->stream_videos);
+            $title->setRelation('stream_videos', []);
+        }
     }
 
     private function loadCredits(Title $title, $params)

@@ -1,12 +1,15 @@
 <?php namespace Common\Files\Controllers;
 
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Files\FileEntry;
+use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Common\Files\Actions\CreateFileEntry;
 use Common\Files\Actions\Storage\StorePublicUpload;
+use Symfony\Component\HttpFoundation\Response;
 
-class PublicUploadsController extends Controller {
+class PublicUploadsController extends BaseController {
 
     /**
      * @var Request
@@ -24,14 +27,15 @@ class PublicUploadsController extends Controller {
     /**
      * Store video or music files without attaching them to any database records.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function videos()
     {
         $this->authorize('store', FileEntry::class);
 
         $this->validate($this->request, [
-            'type'    => 'required|string|in:track',
+            'type'    => 'required_without:path|string|min:1',
+            'path'    => 'required_without:type|string|min:1',
             'file' => 'required|file'
         ]);
 
@@ -43,7 +47,7 @@ class PublicUploadsController extends Controller {
     /**
      * Store images on public disk.
      *
-     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @return ResponseFactory|Response
      */
     public function images() {
 

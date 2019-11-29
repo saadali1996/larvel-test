@@ -1,12 +1,12 @@
 <?php namespace Common\Core\Controllers;
 
-use Common\Core\BootstrapData;
-use Common\Core\Controller;
+use Common\Core\BaseController;
+use Common\Core\Bootstrap\BootstrapData;
+use Common\Settings\Settings;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
-use Common\Settings\Settings;
 
-class HomeController extends Controller {
+class HomeController extends BaseController {
 
     /**
      * @var BootstrapData
@@ -33,20 +33,19 @@ class HomeController extends Controller {
 	 */
 	public function show()
 	{
-        $htmlBaseUri = '/';
-
-        //get uri for html "base" tag
-        if (substr_count(url(''), '/') > 2) {
-            $htmlBaseUri = parse_url(url(''))['path'] . '/';
-        }
-
-        if ($response = $this->handleSeo()) {
+	    // only get meta tags if we're actually
+        // rendering homepage and not a fallback route
+	    if (request()->route()->uri === '/' && $response = $this->handleSeo()) {
             return $response;
         }
 
-        return response(view('app')
-            ->with('bootstrapData', $this->bootstrapData->get())
-            ->with('htmlBaseUri', $htmlBaseUri)
-            ->with('settings', $this->settings));
+        return response(
+            view('app')
+                ->with('bootstrapData', $this->bootstrapData->init())
+                ->with('htmlBaseUri', app('htmlBaseUri'))
+                ->with('settings', $this->settings)
+                ->with('customHtmlPath', public_path('storage/custom-code/custom-html.html'))
+                ->with('customCssPath', public_path('storage/custom-code/custom-styles.css'))
+        );
 	}
 }

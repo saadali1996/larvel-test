@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\NewsArticle;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Database\Paginator;
 use Common\Pages\Page;
 use Illuminate\Http\Request;
 
-class NewsController extends Controller
+class NewsController extends BaseController
 {
     /**
      * @var Request
@@ -34,10 +34,10 @@ class NewsController extends Controller
     {
         $this->authorize('show', NewsArticle::class);
 
-        $paginator = (new Paginator($this->article));
+        $paginator = (new Paginator($this->article, $this->request->all()));
         $paginator->searchColumn = 'title';
 
-        $pagination = $paginator->paginate($this->request->all());
+        $pagination = $paginator->paginate();
 
         if ($this->request->get('stripHtml')) {
             $pagination->map(function(NewsArticle $article) {

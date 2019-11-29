@@ -17,10 +17,10 @@ class HttpClient
      */
     public function __construct($params = [])
     {
-        $params['timeout'] = 8.0;
         if ( ! isset($params['exceptions'])) $params['exceptions'] = false;
-        $params['verify'] = (bool) app(Settings::class)->get('https.enable_cert_verification', true);
-
+        if ( ! isset($params['timeout'])) $params['timeout'] = 2;
+        $defaultVerify = (bool) app(Settings::class)->get('https.enable_cert_verification', true);
+        if ( ! isset($params['verify'])) $params['verify'] = $defaultVerify;
         $this->client = new Client($params);
     }
 
@@ -35,14 +35,12 @@ class HttpClient
 
         if ($r->getStatusCode() === 429 && $r->hasHeader('Retry-After')) {
             $seconds = $r->getHeader('Retry-After') ? $r->getHeader('Retry-After') : 5;
-            sleep($seconds);
+            sleep((int) $seconds);
             $r = $this->get($url);
         }
 
-        $contents = $r->getBody()->getContents();
-
+        $contents = is_string($r) ? $r : $r->getBody()->getContents();
         $json = json_decode($contents, true);
-
         return $json ? $json : $contents;
     }
 
@@ -61,7 +59,9 @@ class HttpClient
             $r = $this->get($url);
         }
 
-        return json_decode($r->getBody(), true);
+        $contents = $r->getBody()->getContents();
+        $json = json_decode($contents, true);
+        return $json ? $json : $contents;
     }
 }
 

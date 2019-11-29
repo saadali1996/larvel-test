@@ -1,12 +1,14 @@
 <?php namespace Common\Auth\Controllers;
 
+use Common\Core\Bootstrap\BootstrapData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Common\Settings\Settings;
-use Common\Core\Controller;
-use Common\Core\BootstrapData;
+use Common\Core\BaseController;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Response;
 
-class LoginController extends Controller
+class LoginController extends BaseController
 {
     use AuthenticatesUsers;
 
@@ -21,8 +23,6 @@ class LoginController extends Controller
     private $settings;
 
     /**
-     * Create a new controller instance.
-     *
      * @param BootstrapData $bootstrapData
      * @param Settings $settings
      */
@@ -37,7 +37,7 @@ class LoginController extends Controller
     /**
      * Validate the user login request.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return void
      */
     protected function validateLogin(Request $request)
@@ -49,20 +49,18 @@ class LoginController extends Controller
     }
 
     /**
-     * The user has been authenticated.
-     *
      * @return mixed
      */
     protected function authenticated()
     {
-        $data = $this->bootstrapData->get();
+        $data = $this->bootstrapData->init()->getEncoded();
         return $this->success(['data' => $data]);
     }
 
     /**
      * Get the failed login response instance.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     protected function sendFailedLoginResponse()
     {
@@ -72,8 +70,8 @@ class LoginController extends Controller
     /**
      * Log the user out of the application.
      *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return Response
      */
     public function logout(Request $request)
     {

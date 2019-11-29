@@ -2,7 +2,7 @@
 
 namespace Common\Core\Prerender;
 
-use Common\Pages\Page;
+use Common\Pages\CustomPage;
 use Common\Core\Contracts\AppUrlGenerator;
 
 class BaseUrlGenerator implements AppUrlGenerator
@@ -10,7 +10,7 @@ class BaseUrlGenerator implements AppUrlGenerator
     const SEPARATOR = '-';
 
     /**
-     * @param array|Page $page
+     * @param array|CustomPage $page
      * @return string
      */
     public function page($page)

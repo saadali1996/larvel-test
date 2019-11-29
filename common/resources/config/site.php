@@ -8,4 +8,6 @@ return [
     'use_symlinks' => env('USE_SYMLINKS', false),
     'enable_contact_page' => env('ENABLE_CONTACT_PAGE', false),
     'billing_integrated' => env('BILLING_ENABLED', false),
+    'api_integrated' => env('API_INTEGRATED', false),
+    'enable_custom_domains' => env('ENABLE_CUSTOM_DOMAINS', false),
 ];

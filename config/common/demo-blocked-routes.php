@@ -36,12 +36,7 @@ return [
     ['method' => 'PUT', 'name' => 'reviews/{id}', 'origin' => 'admin'],
 
     // lists
-    ['method' => 'DELETE', 'name' => 'lists/{id}', 'origin' => 'admin'],
-    ['method' => 'PUT', 'name' => 'lists/{id}', 'params' => ['id' => [29,8,3,7,30]]],
-    ['method' => 'DELETE', 'name' => 'lists/{id}', 'params' => ['id' => [29,8,3,7,30]]],
-    ['method' => 'POST', 'name' => 'lists/{id}/reorder', 'params' => ['id' => [29,8,3,7,30]]],
-    ['method' => 'POST', 'name' => 'lists/{id}/add', 'params' => ['id' => [29,8,3,7,30]]],
-    ['method' => 'POST', 'name' => 'lists/{id}/remove', 'params' => ['id' => [29,8,3,7,30]]],
+    ['method' => 'DELETE', 'name' => 'lists'],
 
     // news
     ['method' => 'POST', 'name' => 'news'],
@@ -53,6 +48,8 @@ return [
     ['method' => 'PUT', 'name' => 'videos/{id}'],
     ['method' => 'DELETE', 'name' => 'videos'],
     ['method' => 'POST', 'name' => 'titles/{id}/videos/change-order'],
+    ['method' => 'POST', 'name' => 'videos/{video}/approve'],
+    ['method' => 'POST', 'name' => 'videos/{video}/disapprove'],
 
     // title tags
     ['method' => 'POST', 'name' => 'titles/{titleId}/tags'],

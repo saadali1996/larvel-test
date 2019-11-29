@@ -2,11 +2,22 @@
 
 use App\User;
 use Common\Auth\Events\UserCreated;
+use Common\Auth\Events\UsersDeleted;
+use Common\Auth\Permissions\Traits\SyncsPermissions;
 use Common\Auth\Roles\Role;
+use Common\Database\Paginator;
 use Common\Settings\Settings;
 use Common\Files\Actions\Deletion\PermanentlyDeleteEntries;
+use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class UserRepository {
+
+    use SyncsPermissions;
 
     /**
      * User model instance.
@@ -58,42 +69,6 @@ class UserRepository {
     }
 
     /**
-     * Paginate all users using given params.
-     *
-     * @param array $params
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
-     */
-    public function paginateUsers($params)
-    {
-        $orderBy    = isset($params['order_by']) ? $params['order_by'] : 'created_at';
-        $orderDir   = isset($params['order_dir']) ? $params['order_dir'] : 'desc';
-        $perPage    = isset($params['per_page']) ? $params['per_page'] : 13;
-        $searchTerm = isset($params['query']) ? $params['query'] : null;
-        $roleId    = isset($params['role_id']) ? (int) $params['role_id'] : null;
-        $roleName  = isset($params['role_name']) ? $params['role_name'] : null;
-
-        $query = $this->user->with('roles');
-
-        if ($searchTerm) {
-            $query->where('email', 'LIKE', "%$searchTerm%");
-        }
-
-        if ($roleId) {
-            $query->whereHas('roles', function($q) use($roleId) {
-                $q->where('roles.id', $roleId);
-            });
-        }
-
-        if ($roleName) {
-            $query->whereHas('roles', function($q) use($roleName) {
-                $q->where('roles.name', $roleName);
-            });
-        }
-
-        return $query->orderBy($orderBy, $orderDir)->paginate($perPage);
-    }
-
-    /**
      * Return first user matching attributes or create a new one.
      *
      * @param array $params
@@ -111,23 +86,24 @@ class UserRepository {
     }
 
     /**
-     * Create a new user and assign default customer role to it.
-     *
-     * @throws \Exception
-     *
      * @param array $params
      * @return User
      */
     public function create($params)
     {
         /** @var User $user */
+        $params['api_token'] = Str::random(40);
         $user = $this->user->forceCreate($this->formatParams($params));
 
         try {
             if ( ! isset($params['roles']) || ! $this->attachRoles($user, $params['roles'])) {
                 $this->assignDefaultRole($user);
             }
-        } catch (\Exception $e) {
+
+            if ($permissions = Arr::get($params, 'permissions')) {
+                $this->syncPermissions($user, $permissions);
+            }
+        } catch (Exception $e) {
             //delete user if there were any errors creating/assigning
             //purchase codes or roles, so there are no artifacts left
             $user->delete();
@@ -140,8 +116,6 @@ class UserRepository {
     }
 
     /**
-     * Update given user.
-     *
      * @param User $user
      * @param array $params
      *
@@ -151,25 +125,26 @@ class UserRepository {
     {
         $user->forceFill($this->formatParams($params, 'update'))->save();
 
-        if (isset($params['roles'])) {
-            $this->attachRoles($user, $params['roles']);
+        if ($roles = Arr::get($params, 'roles')) {
+            $this->attachRoles($user, $roles);
         }
 
-        return $user->load('roles');
+        if ($permissions = Arr::get($params, 'permissions')) {
+            $this->syncPermissions($user, $permissions);
+        }
+
+        return $user->load(['roles', 'permissions']);
     }
 
     /**
-     * Delete multiple users.
-     *
-     * @param array $ids
-     * @return array
+     * @param \Illuminate\Support\Collection $ids
+     * @return integer
      */
     public function deleteMultiple($ids)
     {
-        foreach ($ids as $id) {
-            $user = $this->user->find($id);
-            if (is_null($user)) continue;
+        $users = $this->user->whereIn('id', $ids)->get();
 
+        $users->each(function(User $user) {
             $user->social_profiles()->delete();
             $user->roles()->detach();
 
@@ -181,9 +156,11 @@ class UserRepository {
 
             $entryIds = $user->entries(['owner' => true])->pluck('file_entries.id');
             app(PermanentlyDeleteEntries::class)->execute($entryIds);
-        }
+        });
 
-        return $ids;
+        event(new UsersDeleted($users));
+
+        return $users->count();
     }
 
     /**
@@ -210,13 +187,6 @@ class UserRepository {
             $formatted['available_space'] = is_null($params['available_space']) ? null : (int) $params['available_space'];
         }
 
-        //cast permission values to integer
-        if (isset($params['permissions'])) {
-            $formatted['permissions'] = array_map(function($value) {
-                return (int) $value;
-            }, $params['permissions']);
-        }
-
         if ($type === 'create') {
             $formatted['email'] = $params['email'];
             $formatted['password'] = isset($params['password']) ? bcrypt($params['password']) : null;
@@ -236,7 +206,7 @@ class UserRepository {
      */
     public function attachRoles(User $user, $roles, $type = 'sync')
     {
-        if (empty($roles)) return 0;
+        if (empty($roles) && $type === 'attach') return 0;
         $roleIds = $this->role->whereIn('id', $roles)->get()->pluck('id');
         return $user->roles()->$type($roleIds);
     }
@@ -263,7 +233,7 @@ class UserRepository {
      */
     public function addPermissions(User $user, $permissions)
     {
-        $existing = $user->permissions;
+        $existing = $user->loadPermissions();
 
         foreach ($permissions as $permission) {
             $existing[$permission] = 1;
@@ -283,7 +253,7 @@ class UserRepository {
      */
     public function removePermissions(User $user, $permissions)
     {
-        $existing = $user->permissions;
+        $existing = $user->loadPermissions();
 
         foreach ($permissions as $permission) {
             unset($existing[$permission]);

@@ -3,8 +3,10 @@
 namespace Common\Settings\Validators\MailCredentials;
 
 use Auth;
+use Aws\Ses\Exception\SesException;
 use Config;
 use GuzzleHttp\Exception\ClientException;
+use Illuminate\Mail\MailServiceProvider;
 use Illuminate\Support\Arr;
 use Mail;
 use Exception;
@@ -25,7 +27,7 @@ class MailCredentialsValidator implements SettingsValidator
         $this->setConfigDynamically($settings);
 
         try {
-           Mail::to(Auth::user()->email)->send(new MailCredentialsMailable());
+            Mail::to(Auth::user()->email)->send(new MailCredentialsMailable());
         } catch (Exception $e) {
             return $this->getErrorMessage($e);
         }
@@ -45,6 +47,9 @@ class MailCredentialsValidator implements SettingsValidator
 
             Config::set($key, $value);
         }
+
+        // make sure laravel uses newly set config
+        (new MailServiceProvider(app()))->register();
     }
 
     /**
@@ -58,9 +63,16 @@ class MailCredentialsValidator implements SettingsValidator
             $message = $this->getSmtpMessage($e);
         } else if (config('mail.driver') === 'mailgun') {
             $message = $this->getMailgunMessage($e);
+        } else if (config('mail.driver') === 'ses') {
+            $message = $this->getSesMessage($e);
         }
 
-        return $message ?: $this->getDefaultMessage();
+        return $message ?: $this->getDefaultMessage($e);
+    }
+
+    private function getSesMessage(SesException $e)
+    {
+        return ['mail_group' => $e->getAwsErrorMessage()];
     }
 
     private function getMailgunMessage(ClientException $e)
@@ -92,8 +104,8 @@ class MailCredentialsValidator implements SettingsValidator
         }
     }
 
-    private function getDefaultMessage()
+    private function getDefaultMessage(Exception $e)
     {
-        return ['mail_group' => 'Could not validate mail credentials. Please double check them.'];
+        return ['mail_group' => "Could not validate mail credentials: <br> {$e->getMessage()}"];
     }
 }

@@ -11,7 +11,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call(DefaultListsSeeder::class);
-        $this->call(DefaultPagesSeeder::class);
+        $this->call(WatchlistSeeder::class);
+        if (config('common.site.demo')) {
+            $this->call(DefaultListsSeeder::class);
+            $this->call(DefaultPagesSeeder::class);
+        }
     }
 }

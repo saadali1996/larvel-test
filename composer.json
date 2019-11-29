@@ -7,6 +7,7 @@
     "require": {
         "php": ">=5.6.4",
         "ext-json": "*",
+        "awobaz/compoships": "^1.1",
         "doctrine/dbal": "2.5.*",
         "doctrine/inflector": "1.1.0",
         "fideloper/proxy": "^3.3",
@@ -17,7 +18,15 @@
         "laravel/framework": "5.4.x-dev",
         "laravel/socialite": "3.0.x-dev",
         "laravel/tinker": "~1.0",
+        "league/flysystem-aws-s3-v3": "^1.0",
+        "league/flysystem-rackspace": "^1.0",
+        "league/omnipay": "^3.0",
+        "mhetreramesh/flysystem-backblaze": "1.1.4",
+        "omnipay/paypal": "^3.0",
+        "omnipay/stripe": "^3.0",
         "pda/pheanstalk": "^3.1",
+        "php-http/guzzle6-adapter": "1.1.1",
+        "predis/predis": "^1.1",
         "sentry/sentry-laravel": "^0.9.0",
         "spatie/laravel-analytics": "1.4.1",
         "symfony/css-selector": "3.4.*",
@@ -26,11 +35,12 @@
         "symfony/translation": "3.4.*"
     },
     "require-dev": {
-        "fzaninotto/faker": "~1.4",
-        "mockery/mockery": "0.9.*",
-        "phpunit/phpunit": "~5.7",
         "barryvdh/laravel-ide-helper": "^2.4",
-        "leafo/scssphp": "^0.7.7"
+        "fzaninotto/faker": "~1.4",
+        "itsgoingd/clockwork": "^4.0",
+        "leafo/scssphp": "^0.7.7",
+        "mockery/mockery": "0.9.*",
+        "phpunit/phpunit": "~5.7"
     },
     "autoload": {
         "classmap": [

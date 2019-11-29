@@ -7,9 +7,10 @@ use Illuminate\Http\JsonResponse;
 use Common\Mail\MailTemplates;
 use Illuminate\Filesystem\Filesystem;
 use Common\Mail\MailTemplatePreview;
-use Common\Core\Controller;
+use Common\Core\BaseController;
+use Illuminate\Support\Collection;
 
-class MailTemplatesController extends Controller
+class MailTemplatesController extends BaseController
 {
     /**
      * @var Filesystem
@@ -32,8 +33,6 @@ class MailTemplatesController extends Controller
     private $preview;
 
     /**
-     * MailTemplatesController constructor.
-     *
      * @param Filesystem $fs
      * @param Request $request
      * @param MailTemplates $templates
@@ -48,9 +47,7 @@ class MailTemplatesController extends Controller
     }
 
     /**
-     * Get all mail templates.
-     *
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function index()
     {
@@ -60,8 +57,6 @@ class MailTemplatesController extends Controller
     }
 
     /**
-     * Update specified mail template with data.
-     *
      * @param integer $id
      *
      * @return array|JsonResponse
@@ -114,7 +109,7 @@ class MailTemplatesController extends Controller
         try {
             return $this->preview->render($data);
         } catch (Exception $e) {
-            return $this->error();
+            return $this->error(['contents' => 'Mail template syntax is not valid.']);
         }
     }
 

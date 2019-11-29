@@ -34,40 +34,48 @@ class Paginator
     public $searchColumn = 'name';
 
     /**
+     * @var array
+     */
+    public $filterColumns = [];
+
+    /**
      * @var Closure
      */
     public $searchCallback;
 
     /**
-     * @param Model $model
+     * @var array
      */
-    public function __construct(Model $model)
+    private $params;
+
+    /**
+     * @param Model $model
+     * @param array $params
+     */
+    public function __construct(Model $model, array $params)
     {
         $this->model = $model;
+        $this->params = $this->toCamelCase($params);
         $this->query = $model->newQuery();
     }
 
     /**
-     * @param array $params
-     *
      * @return LengthAwarePaginator
      */
-    public function paginate($params)
+    public function paginate()
     {
-        $params = $this->toCamelCase($params);
+        $with = array_filter(explode(',', $this->param('with', '')));
+        $withCount = array_filter(explode(',', $this->param('withCount', '')));
+        $searchTerm = $this->param('query');
+        $order = $this->getOrder();
+        $perPage = $this->param('perPage', 15);
+        $page = (int) $this->param('page', 1);
 
-        $with = array_filter(explode(',', Arr::get($params, 'with', '')));
-        $withCount = array_filter(explode(',', Arr::get($params, 'withCount', '')));
-        $searchTerm = Arr::get($params, 'query');
-        $order = $this->getOrder($params);
-        $perPage = Arr::get($params, 'perPage', 15);
-        $page = (int) Arr::get($params, 'page', 1);
-
-        //load specified relations and counts
+        // load specified relations and counts
         if ( ! empty($with)) $this->query->with($with);
         if ( ! empty($withCount)) $this->query->withCount($withCount);
 
-        //search
+        // search
         if ($searchTerm) {
             if ($this->searchCallback) {
                 call_user_func($this->searchCallback, $this->query, $searchTerm);
@@ -76,16 +84,28 @@ class Paginator
             }
         }
 
-        //order
+        $this->applyFilters();
+
+        // order
         $this->query->orderBy($order['col'], $order['dir']);
 
-        //paginate
+        // paginate
         return new LengthAwarePaginator(
             with(clone $this->query)->skip(($page - 1) * $perPage)->take($perPage)->get(),
             $this->query->count(),
             $perPage,
             $page
         );
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function param($name, $default = null)
+    {
+        return Arr::get($this->params, camel_case($name)) ?: $default;
     }
 
     /**
@@ -119,7 +139,6 @@ class Paginator
         return $this;
     }
 
-
     /**
      * @param $column
      * @param null $operator
@@ -150,18 +169,17 @@ class Paginator
     /**
      * Extract order for paginator query from specified params.
      *
-     * @param $params
      * @return array
      */
-    private function getOrder($params) {
+    private function getOrder() {
         //order provided as single string: "column|direction"
-        if ($specifiedOrder = Arr::get($params, 'order')) {
+        if ($specifiedOrder = $this->param('order')) {
             $parts = preg_split("(\||:)", $specifiedOrder);
             $orderCol = Arr::get($parts, 0, $this->defaultOrderColumn);
             $orderDir = Arr::get($parts, 1, $this->defaultOrderDirection);
         } else {
-            $orderCol = Arr::get($params, 'orderBy', $this->defaultOrderColumn);
-            $orderDir = Arr::get($params, 'orderDir', $this->defaultOrderDirection);
+            $orderCol = $this->param('orderBy', $this->defaultOrderColumn);
+            $orderDir = $this->param('orderDir', $this->defaultOrderDirection);
         }
 
         return ['dir' => $orderDir, 'col' => $orderCol];
@@ -172,5 +190,58 @@ class Paginator
         return collect($params)->keyBy(function($value, $key) {
             return camel_case($key);
         })->toArray();
+    }
+
+    private function applyFilters()
+    {
+        foreach ($this->filterColumns as $column => $callback) {
+            $column = is_int($column) ? $callback : $column;
+            $column = camel_case($column);
+            if (isset($this->params[$column])) {
+                $value = $this->params[$column];
+                $column = snake_case($column);
+
+                // user specified callback
+                if (is_callable($callback)) {
+                    $callback($this->query);
+
+                // boolean filter
+                } else if ($value === 'false' || $value === 'true') {
+                    $this->applyBooleanFilter($column, $value);
+
+                // filter by between date
+                } else if (str_contains($column, '_at') && str_contains($value, ':')) {
+                    $this->query()->whereBetween($column, explode(':', $value));
+
+                // filter by specified column value
+                } else {
+                    $this->query()->where($column, $value);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param string $column
+     * @param string $value
+     */
+    private function applyBooleanFilter($column, $value)
+    {
+        // cast "true" or "false" to boolean
+        $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+        $casts = $this->model->getCasts();
+
+        // column is a simple boolean type
+        if (Arr::get($casts, $column) === 'boolean') {
+            $this->query()->where($column, $value);
+
+            // column has actual value, test whether it's null or not by default
+        } else {
+            if ($value) {
+                $this->query()->whereNotNull($column);
+            } else {
+                $this->query()->whereNull($column);
+            }
+        }
     }
 }

@@ -2,21 +2,26 @@
 
 namespace App;
 
+use Awobaz\Compoships\Compoships;
 use App\Services\Traits\HasCreditableRelation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 
 /**
  * Class Episode
  * @property string $type;
  * @property int $episode_number;
+ * @property int season_number
+ * @property int title_id
  * @property Carbon $updated_at;
  * @method static Episode findOrFail($id, $columns = ['*'])
  */
 class Episode extends Model
 {
-    use HasCreditableRelation;
+    use HasCreditableRelation, Compoships;
 
     const EPISODE_TYPE = 'episode';
 
@@ -59,7 +64,7 @@ class Episode extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function title()
     {
@@ -67,11 +72,19 @@ class Episode extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Uses "Compoships" trait to query by multiple relation fields.
+     *
+     * @return HasMany
      */
-    public function videos()
+    public function stream_videos()
     {
-        return $this->hasMany(Video::class);
+        return $this->hasMany(
+            Video::class,
+            ['episode', 'season', 'title_id'],
+            ['episode_number', 'season_number', 'title_id']
+        )->where('approved', true)
+            ->where('category', 'full')
+            ->orderBy('order', 'asc');
     }
 
     public function season()

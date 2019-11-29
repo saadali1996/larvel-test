@@ -4,11 +4,12 @@ use Closure;
 use Common\Billing\BillingPlan;
 use Common\Billing\Subscription;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Database\Paginator;
 
-class SubscriptionsController extends Controller
+class SubscriptionsController extends BaseController
 {
     /**
      * @var Request
@@ -46,15 +47,14 @@ class SubscriptionsController extends Controller
     /**
      * Paginate all existing subscriptions.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     * @return \Illuminate\Pagination\LengthAwarePaginator
+     * @return JsonResponse
      */
     public function index()
     {
         $this->authorize('index', Subscription::class);
 
-        $paginator = (new Paginator($this->subscription))
-            ->with('user');
+        $paginator = (new Paginator($this->subscription, $this->request->all()))->with('user');
+        $paginator->filterColumns = ['gateway', 'cancelled'];
 
         $paginator->searchCallback = function(Builder $query, $searchTerm) {
             $query->whereHas('user', function(Builder $query) use($searchTerm) {
@@ -62,14 +62,15 @@ class SubscriptionsController extends Controller
             })->orWhere('gateway', 'like', "$searchTerm%");
         };
 
-        return $paginator->paginate($this->request->all());
+        $pagination = $paginator->paginate();
+
+        return $this->success(['pagination' => $pagination]);
     }
 
     /**
      * Create a new subscription.
      *
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @return JsonResponse
      */
     public function store()
     {
@@ -92,8 +93,7 @@ class SubscriptionsController extends Controller
      * Update existing subscription.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @return JsonResponse
      */
     public function update($id)
     {
@@ -118,7 +118,7 @@ class SubscriptionsController extends Controller
      * Change plan of specified subscription.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function changePlan($id)
     {
@@ -132,15 +132,15 @@ class SubscriptionsController extends Controller
 
         $subscription->changePlan($plan);
 
-        return $this->success(['user' => $subscription->user()->first()]);
+        $user = $subscription->user()->first();
+        return $this->success(['user' => $user->load('subscriptions.plan')]);
     }
 
     /**
      * Cancel specified subscription.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Exception
+     * @return JsonResponse
      */
     public function cancel($id)
     {
@@ -157,15 +157,15 @@ class SubscriptionsController extends Controller
             $subscription->cancel();
         }
 
-        return $this->success(['user' => $subscription->user()->first()]);
+        $user = $subscription->user()->first();
+        return $this->success(['user' => $user->load('subscriptions.plan')]);
     }
 
     /**
      * Resume specified subscription.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Common\Billing\GatewayException
+     * @return JsonResponse
      */
     public function resume($id)
     {

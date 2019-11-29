@@ -10,10 +10,11 @@ use App\Title;
 use App\Person;
 use App\Episode;
 use App\ListModel;
-use Common\Core\Controller;
+use Common\Core\BaseController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ListItemController extends Controller
+class ListItemController extends BaseController
 {
     /**
      * @var ListModel
@@ -38,7 +39,7 @@ class ListItemController extends Controller
 
     /**
      * @param int $listId
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function add($listId)
     {
@@ -58,7 +59,7 @@ class ListItemController extends Controller
 
     /**
      * @param int $listId
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function remove($listId)
     {

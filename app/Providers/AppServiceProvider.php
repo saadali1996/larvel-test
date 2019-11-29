@@ -3,15 +3,13 @@
 namespace App\Providers;
 
 use App\Services\Admin\GetAnalyticsHeaderData;
-use App\Services\Data\Contracts\DataProvider;
+use App\Services\AppBootstrapData;
 use App\Services\Data\Contracts\NewsProviderInterface;
-use App\Services\Data\Local\LocalDataProvider;
 use App\Services\Data\News\ImdbNewsProvider;
-use App\Services\Data\Tmdb\TmdbApi;
 use App\Services\UrlGenerator;
 use Common\Admin\Analytics\Actions\GetAnalyticsHeaderDataAction;
+use Common\Core\Bootstrap\BootstrapData;
 use Common\Core\Contracts\AppUrlGenerator;
-use Common\Settings\Settings;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,14 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // bind data provider
-        $concrete = app(Settings::class)->get('content.automation') ?
-            TmdbApi::class :
-            LocalDataProvider::class;
-
         $this->app->bind(
-            DataProvider::class,
-            $concrete
+            BootstrapData::class,
+            AppBootstrapData::class
         );
     }
 

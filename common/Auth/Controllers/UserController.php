@@ -2,15 +2,15 @@
 
 use App\User;
 use Auth;
+use Common\Auth\Actions\PaginateUsers;
 use Common\Settings\Settings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Common\Auth\UserRepository;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Auth\Requests\ModifyUsers;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class UserController extends Controller {
+class UserController extends BaseController {
 
     /**
      * @var User
@@ -49,24 +49,23 @@ class UserController extends Controller {
     }
 
     /**
-     * Return a collection of all registered users.
-     *
      * @return JsonResponse
      */
     public function index()
     {
         $this->authorize('index', User::class);
 
-        $pagination = $this->userRepository->paginateUsers($this->request->all());
+        $pagination = app(PaginateUsers::class)
+            ->execute($this->request->all());
 
         return $this->success(['pagination' => $pagination]);
     }
 
     /**
-     * @param integer $id
+     * @param User $user
      * @return JsonResponse
      */
-    public function show($id)
+    public function show(User $user)
     {
         $relations = array_filter(explode(',', $this->request->get('with', '')));
         $relations = array_merge(['roles', 'social_profiles'], $relations);
@@ -75,61 +74,55 @@ class UserController extends Controller {
             $relations[] = 'purchase_codes';
         }
 
-        $user = $this->user->with($relations)->findOrFail($id);
+        $user->load($relations);
 
         $this->authorize('show', $user);
+
+        if (Auth::id() === $user->id) {
+            $user->makeVisible(['api_token']);
+        }
 
         return $this->success(['user' => $user]);
     }
 
     /**
-     * Create a new user.
-     *
      * @param ModifyUsers $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function store(ModifyUsers $request)
     {
         $this->authorize('store', User::class);
 
-        $user = $this->userRepository->create($this->request->all());
+        $user = $this->userRepository->create($request->all());
 
         return $this->success(['user' => $user], 201);
     }
 
     /**
-     * Update an existing user.
-     *
-     * @param integer $id
+     * @param User $user
      * @param ModifyUsers $request
      *
      * @return JsonResponse
      */
-    public function update($id, ModifyUsers $request)
+    public function update(User $user, ModifyUsers $request)
     {
-        $user = $this->userRepository->findOrFail($id);
-
         $this->authorize('update', $user);
 
-        $user = $this->userRepository->update($user, $this->request->all());
+        $user = $this->userRepository->update($user, $request->all());
 
         return $this->success(['user' => $user]);
     }
 
     /**
-     * Delete multiple users.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @param string $ids
+     * @return JsonResponse
      */
-    public function deleteMultiple()
+    public function destroy($ids)
     {
-        $this->authorize('destroy', User::class);
+        $userIds = explode(',', $ids);
+        $this->authorize('destroy', [User::class, $userIds]);
 
-        $this->validate($this->request, [
-            'ids' => 'required|array|min:1'
-        ]);
-
-        $users = $this->user->whereIn('id', $this->request->get('ids'))->get();
+        $users = $this->user->whereIn('id', $userIds)->get();
 
         // guard against current user or admin user deletion
         foreach ($users as $user) {
@@ -142,8 +135,8 @@ class UserController extends Controller {
             }
         }
 
-        $this->userRepository->deleteMultiple($this->request->get('ids'));
+        $this->userRepository->deleteMultiple($users->pluck('id'));
 
-        return $this->success([], 204);
+        return $this->success();
     }
 }

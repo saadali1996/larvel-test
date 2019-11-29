@@ -7,10 +7,11 @@ use App\Person;
 use App\Season;
 use DB;
 use App\Title;
-use Common\Core\Controller;
+use Common\Core\BaseController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class TitleCreditController extends Controller
+class TitleCreditController extends BaseController
 {
     /**
      * @var Request
@@ -36,7 +37,7 @@ class TitleCreditController extends Controller
      * Update title or episode "creditable" pivot record.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function update($id)
     {
@@ -72,7 +73,7 @@ class TitleCreditController extends Controller
     /**
      * Attach credit to title or episode.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function store()
     {
@@ -115,7 +116,7 @@ class TitleCreditController extends Controller
      * Remove title or episode "creditable" pivot record.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function destroy($id)
     {
@@ -129,7 +130,7 @@ class TitleCreditController extends Controller
     }
 
     /**
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function changeOrder() {
 

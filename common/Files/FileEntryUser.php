@@ -14,14 +14,6 @@ class FileEntryUser extends BaseUser
 
     protected $billingEnabled = false;
 
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-
-        // don't load user subscriptions
-        $this->with = [];
-    }
-
     protected $hidden = [
         'password', 'remember_token', 'first_name', 'last_name', 'has_password', 'pivot'
     ];

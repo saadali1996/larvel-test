@@ -3,9 +3,9 @@
 use Storage;
 use App\User;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class UserAvatarController extends Controller {
+class UserAvatarController extends BaseController {
 
     /**
      * Laravel request instance.

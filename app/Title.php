@@ -2,11 +2,18 @@
 
 namespace App;
 
+use App\Services\Data\Contracts\DataProvider;
+use App\Services\Data\Local\LocalDataProvider;
+use App\Services\Data\Tmdb\TmdbApi;
 use App\Services\Traits\HasCreditableRelation;
 use Carbon\Carbon;
 use Common\Settings\Settings;
 use Common\Tags\Tag;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
@@ -28,6 +35,7 @@ use Illuminate\Support\Collection;
  * @property Season $season;
  * @property integer $season_count;
  * @property string|null $tmdb_id;
+ * @method whereGenre(string|array $genres);
  */
 class Title extends Model
 {
@@ -36,6 +44,7 @@ class Title extends Model
     const MOVIE_TYPE = 'movie';
     const SERIES_TYPE = 'series';
     const TITLE_TYPE = 'title';
+    const LOCAL_PROVIDER = 'local';
 
     protected $guarded = ['id', 'type'];
     protected $dates = ['release_date'];
@@ -74,7 +83,7 @@ class Title extends Model
     public function needsUpdating($forceAutomation = false)
     {
         // auto update disabled in settings
-        if ( ! $forceAutomation && ! app(Settings::class)->get('content.automation')) return false;
+        if ( ! $forceAutomation && app(Settings::class)->get('content.title_provider') === Title::LOCAL_PROVIDER) return false;
 
         // title was never synced from external site
         if ( ! $this->exists || ($this->allow_update && ! $this->fully_synced)) return true;
@@ -86,6 +95,11 @@ class Title extends Model
 
         // title was released over a month ago, no need to sync anymore
         //if ($this->release_date->lessThan(Carbon::now()->subMonth())) return false;
+
+        // only partial data was fetched
+        if (!$this->runtime && !$this->revenue && !$this->country && !$this->budget && !$this->imdb_id) {
+            return true;
+        }
 
         // sync every week
         return ($this->allow_update && $this->updated_at->lessThan(Carbon::now()->subWeek()));
@@ -117,6 +131,10 @@ class Title extends Model
         });
 
         if ($new->isNotEmpty()) {
+            $new->transform(function($title) {
+                $title['created_at'] = Arr::get($title, 'created_at', Carbon::now());
+                return $title;
+            });
             $this->insert($new->toArray());
             return $this->whereIn($uniqueKey, $titles->pluck($uniqueKey))->get();
         } else {
@@ -147,7 +165,7 @@ class Title extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function genres()
     {
@@ -157,7 +175,7 @@ class Title extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function keywords()
     {
@@ -167,7 +185,7 @@ class Title extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function countries()
     {
@@ -177,36 +195,36 @@ class Title extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function videos()
     {
+        list($col, $dir) = explode(':', app(Settings::class)->get('streaming.default_sort', 'order:asc'));
         return $this->hasMany(Video::class)
-            ->whereNull('episode_id')
-            ->where('approved', true)
-            ->orderBy('order', 'asc');
+            ->orderBy($col, $dir);
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function allVideos()
+    public function stream_videos()
     {
+        list($col, $dir) = explode(':', app(Settings::class)->get('streaming.default_sort', 'order:asc'));
         return $this->hasMany(Video::class)
-            ->orderBy('order', 'desc');
+            ->where('approved', true)
+            ->where('category', 'full')
+            ->orderBy($col, $dir);
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function images()
     {
         return $this->morphMany(Image::class, 'model')
-            ->select(['id', 'model_id', 'model_type', 'url', 'type', 'source']);
+            ->select(['id', 'model_id', 'model_type', 'url', 'type', 'source'])
+            ->orderBy('order', 'asc');
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function seasons()
     {
@@ -214,7 +232,7 @@ class Title extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
     public function season()
     {
@@ -222,7 +240,7 @@ class Title extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function episodes()
     {
@@ -251,5 +269,26 @@ class Title extends Model
             'next_episode' => $episodes->last(),
             'current_episode' => $episodes->first(),
         ]);
+    }
+
+    /**
+     * @param array $params
+     * @return DataProvider
+     */
+    public static function dataProvider($params = [])
+    {
+        $settings = app(Settings::class);
+
+        // Fetch title seasons, even if automation is disabled because they can't be
+        // fetched when importing multiple titles without hitting tmdb api rate limits
+        if (Arr::get($params, 'forSeason') && $settings->get('content.force_season_update')) {
+            return app(TmdbApi::class);
+        }
+
+        if (app(Settings::class)->get('content.title_provider') !== Title::LOCAL_PROVIDER) {
+            return app(TmdbApi::class);
+        } else {
+            return app(LocalDataProvider::class);
+        }
     }
 }

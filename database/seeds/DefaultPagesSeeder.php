@@ -1,19 +1,19 @@
 <?php
 
-use Common\Pages\Page;
+use Common\Pages\CustomPage;
 use Illuminate\Database\Seeder;
 
 class DefaultPagesSeeder extends Seeder
 {
     /**
-     * @var Page
+     * @var CustomPage
      */
     private $page;
 
     /**
-     * @param Page $page
+     * @param CustomPage $page
      */
-    public function __construct(Page $page)
+    public function __construct(CustomPage $page)
     {
         $this->page = $page;
     }

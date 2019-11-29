@@ -1,9 +1,9 @@
 <?php namespace Common\Admin\Appearance\Controllers;
 
 use File;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class IconController extends Controller
+class IconController extends BaseController
 {
     public function index()
     {

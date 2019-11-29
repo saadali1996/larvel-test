@@ -3,6 +3,7 @@
 use App\User;
 use Exception;
 use Common\Settings\Settings;
+use Illuminate\Http\Response;
 use View, Auth, Session;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 
@@ -259,7 +260,8 @@ class Oauth {
         //if we din't create a social profile for this service yet, but
         //user with returned email already exists in database, ask user to
         //enter password, and if it matches connect account to service
-        if (isset($profile->email) && $user = $this->findUserByEmail($profile->email)) {
+        $user = $this->findUserByEmail($profile->email);
+        if (isset($profile->email) && $user && $user->password) {
             $credentialsToRequest[] = 'password';
         }
 
@@ -294,17 +296,17 @@ class Oauth {
      */
     public function validateExtraCredentials($input)
     {
-        //get a list of credentials that we've requested from user
+        // get a list of credentials that we've requested from user
         $credentials = $this->getPersistedData('requested_extra_credentials');
 
         $errors = [];
 
-        //validate password supplied by user against existing account or supplied email address
+        // validate password supplied by user against existing account or supplied email address
         if (in_array('password', $credentials) && ! $this->callbackPasswordIsValid($input)) {
             $errors['password'] = 'Incorrect password. Please try again.';
         }
 
-        //if email user supplied already exists and user did not supply a password, show an error
+        // if email user supplied already exists and user did not supply a password, show an error
         if ( ! isset($input['password']) && in_array('email', $credentials) && $this->findUserByEmail($input['email'])) {
             $errors['email'] = 'Email already exists. Please specify password.';
         }
@@ -316,7 +318,7 @@ class Oauth {
      * Get error response with option error message.
      *
      * @param string $message
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function getErrorResponse($message = null)
     {

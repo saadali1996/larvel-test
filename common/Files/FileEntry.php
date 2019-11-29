@@ -2,9 +2,15 @@
 
 use App\User;
 use Auth;
+use Carbon\Carbon;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Common\Files\Traits\HandlesEntryPaths;
@@ -16,7 +22,7 @@ use Storage;
 /**
  * FileEntry
  *
- * @mixin \Eloquent
+ * @mixin Eloquent
  * @property integer $id
  * @property integer $parent_id
  * @property string $name
@@ -26,8 +32,8 @@ use Storage;
  * @property string $extension
  * @property boolean $thumbnail
  * @property string $preview_token
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read string $type
  * @property-read FileEntry|null $parent
  * @property-read Collection $users
@@ -55,7 +61,7 @@ class FileEntry extends Model
     ];
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function users()
     {
@@ -68,7 +74,7 @@ class FileEntry extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function children()
     {
@@ -76,7 +82,7 @@ class FileEntry extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function parent()
     {
@@ -85,7 +91,7 @@ class FileEntry extends Model
 
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
+     * @return MorphToMany
      */
     public function tags()
     {
@@ -144,7 +150,7 @@ class FileEntry extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function owner()
     {

@@ -2,9 +2,14 @@
 
 namespace App;
 
+use App\Services\Data\Contracts\DataProvider;
+use App\Services\Data\Local\LocalDataProvider;
+use App\Services\Data\Tmdb\TmdbApi;
 use Carbon\Carbon;
 use Common\Settings\Settings;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 /**
@@ -12,8 +17,9 @@ use Illuminate\Support\Collection;
  * @property boolean $fully_synced;
  * @property integer $tmdb_id;
  * @property Carbon $updated_at;
- * @property-read Collection|\App\Title[] $credits;
+ * @property-read Collection|Title[] $credits;
  * @property string known_for
+ * @property string description
  * @method static Person findOrFail($id, $columns = ['*'])
  */
 class Person extends Model
@@ -52,6 +58,10 @@ class Person extends Model
         });
 
         if ($new->isNotEmpty()) {
+            $new->transform(function($person) {
+                $person['created_at'] = Arr::get($person, 'created_at', Carbon::now());
+                return $person;
+            });
             $this->insert($new->toArray());
             return $this->whereIn($uniqueKey, $people->pluck($uniqueKey))->get();
         } else {
@@ -62,7 +72,7 @@ class Person extends Model
     public function needsUpdating($forceAutomation = false)
     {
         // auto update disabled in settings
-        if ( ! $forceAutomation && ! app(Settings::class)->get('content.automation')) return false;
+        if ( ! $forceAutomation && app(Settings::class)->get('content.people_provider') === Title::LOCAL_PROVIDER) return false;
 
         // person was never synced from external site
         if ( ! $this->exists || ($this->allow_update && ! $this->fully_synced)) return true;
@@ -77,7 +87,7 @@ class Person extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function credits()
     {
@@ -89,7 +99,7 @@ class Person extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function popularCredits()
     {
@@ -100,24 +110,37 @@ class Person extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function episodeCredits()
     {
         return $this->morphedByMany(Episode::class, 'creditable')
             ->select('episodes.id', 'title_id', 'name', 'year', 'season_number', 'episode_number')
             ->withPivot(['job', 'department', 'order', 'character'])
-            ->orderBy('episodes.year', 'desc');
+            ->orderBy('episodes.season_number', 'desc')
+            ->orderBy('episodes.episode_number', 'desc');
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function seasonCredits()
     {
         return $this->morphedByMany(Season::class, 'creditable')
         ->select('seasons.id', 'title_id')
         ->withPivot(['job', 'department', 'order', 'character'])
-        ->orderBy('seasons.release_date', 'desc');
+        ->orderBy('seasons.number', 'desc');
+    }
+
+    /**
+     * @return DataProvider
+     */
+    public static function dataProvider()
+    {
+        if (app(Settings::class)->get('content.people_provider') !== Title::LOCAL_PROVIDER) {
+            return app(TmdbApi::class);
+        } else {
+            return app(LocalDataProvider::class);
+        }
     }
 }

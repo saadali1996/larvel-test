@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 class NewsArticle extends Model
 {
     const NEWS_ARTICLE_TYPE = 'news_article';
-    protected $table = 'pages';
+    protected $table = 'custom_pages';
     protected $guarded = ['id'];
 
     protected static function boot()

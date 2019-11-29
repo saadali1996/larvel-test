@@ -1,5 +1,7 @@
 <?php namespace Common\Localizations;
 
+use Carbon\Carbon;
+use Eloquent;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -8,17 +10,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $name
  * @property string $lines
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @mixin \Eloquent
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @mixin Eloquent
  */
 class Localization extends Model
 {
     protected $guarded = ['id'];
 
     /**
-     * Decode lines json attribute.
-     *
      * @param string $text
      * @return array
      */

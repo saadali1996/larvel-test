@@ -1,40 +1,40 @@
 <?php namespace Common\Auth\Roles;
 
+use Common\Auth\Permissions\Permission;
+use App\User;
+use Carbon\Carbon;
+use Common\Auth\Permissions\Traits\HasPermissionsRelation;
+use Eloquent;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Common\Auth\FormatsPermissions;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
  * @property integer $id
  * @property string $name
- * @property array $permissions
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property boolean $default
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\User[] $users
- * @mixin \Eloquent
+ * @property-read Collection|User[] $users
+ * @property-read Collection|Permission[] $permissions
+ * @mixin Eloquent
  * @property int $guests
  */
 class Role extends Model
 {
-    use FormatsPermissions;
+    use HasPermissionsRelation;
 
     /**
-     * The attributes that are not mass assignable.
-     *
      * @var array
      */
     protected $guarded = ['id'];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
      * @var array
      */
-    protected $hidden   = ['pivot'];
+    protected $hidden = ['pivot', 'legacy_permissions'];
 
     /**
-     * The attributes that should be cast to native types.
-     *
      * @var array
      */
     protected $casts = ['id' => 'integer', 'default' => 'boolean', 'guests' => 'boolean'];

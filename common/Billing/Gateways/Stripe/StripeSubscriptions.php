@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use Common\Billing\BillingPlan;
 use App\User;
 use Common\Billing\Subscription;
+use LogicException;
 use Omnipay\Stripe\Gateway;
 use Common\Billing\GatewayException;
 use Common\Billing\Gateways\Contracts\GatewaySubscriptionsInterface;
@@ -60,7 +61,7 @@ class StripeSubscriptions implements GatewaySubscriptionsInterface
     public function create(BillingPlan $plan, User $user, $startDate = null)
     {
         if ($user->subscribedTo($plan, 'stripe')) {
-            throw new \LogicException("User already subscribed to '{$plan->name}' plan.");
+            throw new LogicException("User already subscribed to '{$plan->name}' plan.");
         }
 
         $request = $this->gateway->createSubscription([

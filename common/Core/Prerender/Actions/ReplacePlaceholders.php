@@ -45,8 +45,6 @@ class ReplacePlaceholders
      */
     private function replace($config)
     {
-        //(new Dumper)->dump($config);
-
         if (is_array($config)) {
             if (Arr::get($config, '_type') === 'loop') {
                 return $this->replaceLoop($config);
@@ -58,26 +56,6 @@ class ReplacePlaceholders
         } else {
             return $this->replaceString($config, $this->allData);
         }
-
-        if (is_array($config)) {
-            foreach ($config as $key => $childConfig) {
-                // special loop config, generate item based on
-                // specified template for each loop data item
-                if (Arr::get($childConfig, '_type') === 'loop') {
-                    $config[$key] = $this->replaceLoop($childConfig);
-                } else if (is_array($childConfig)) {
-                    $config[$key] = array_map(function($item) {
-                        return $this->replace($item);
-                    }, $config[$key]);
-                } else {
-                    $config[$key] = $this->replace($childConfig);
-                }
-            }
-        } else {
-            return $this->replaceString($config, $this->allData);
-        }
-
-        return $config;
     }
 
     /**
@@ -89,7 +67,7 @@ class ReplacePlaceholders
         $dataSelector = strtolower($config['dataSelector']);
         $loopData = Arr::get($this->allData, $dataSelector);
 
-        // won't be able to access paginator data via do notation
+        // won't be able to access paginator data via dot notation
         // selector (items.data), need to extract it manually
         if ($loopData instanceof AbstractPaginator) {
             $loopData = $loopData->items();
@@ -123,7 +101,7 @@ class ReplacePlaceholders
             return $this->replaceString($config['template'], [$name => $loopItem]);
         });
 
-        return $returnFirstOnly ? $generated->first() : $generated->toArray();
+        return $returnFirstOnly ? $generated->first() : $generated->values()->toArray();
     }
 
     /**

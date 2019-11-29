@@ -2,21 +2,21 @@
 
 use App;
 use Auth;
+use Common\Core\BaseController;
 use Common\Database\Paginator;
 use Common\Files\Actions\CreateFileEntry;
+use Common\Files\Actions\Deletion\PermanentlyDeleteEntries;
+use Common\Files\Actions\Deletion\SoftDeleteEntries;
 use Common\Files\Actions\Storage\StorePrivateUpload;
 use Common\Files\Events\FileEntriesDeleted;
 use Common\Files\Events\FileEntryCreated;
-use Common\Files\Requests\UploadFile;
 use Common\Files\FileEntry;
+use Common\Files\Requests\UploadFile;
+use Common\Files\Response\FileContentResponseCreator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
-use Common\Files\Actions\Deletion\SoftDeleteEntries;
-use Common\Files\Response\FileContentResponseCreator;
-use Common\Files\Actions\Deletion\PermanentlyDeleteEntries;
 
-class FileEntriesController extends Controller {
+class FileEntriesController extends BaseController {
 
     /**
      * @var Request
@@ -48,9 +48,9 @@ class FileEntriesController extends Controller {
 
         $this->authorize('index', FileEntry::class);
 
-        $pagination = (new Paginator($this->entry))
+        $pagination = (new Paginator($this->entry, $this->request->all()))
             ->with('users')
-            ->paginate($params);
+            ->paginate();
 
         return $this->success(['pagination' => $pagination]);
     }
@@ -76,7 +76,6 @@ class FileEntriesController extends Controller {
     /**
      * @param UploadFile $request
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function store(UploadFile $request)
     {
@@ -101,7 +100,6 @@ class FileEntriesController extends Controller {
     /**
      * @param int $entryId
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function update($entryId)
     {
@@ -123,7 +121,6 @@ class FileEntriesController extends Controller {
      * Delete specified file entries from disk and database.
      *
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function destroy()
     {

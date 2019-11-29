@@ -4,9 +4,9 @@ use Common\Admin\Appearance\AppearanceSaver;
 use Common\Admin\Appearance\AppearanceValues;
 use Common\Settings\Settings;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class AppearanceController extends Controller {
+class AppearanceController extends BaseController {
 
     /**
      * @var Request

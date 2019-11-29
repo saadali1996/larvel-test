@@ -102,7 +102,6 @@ return [
     'custom' => [
         'email' => [
             'email_confirmed' => __('Please confirm your email address.'),
-            'exists' => 'test',
         ],
         'emails.*' => [
             'exists' => 'User with email ":attribute" does not exist.',

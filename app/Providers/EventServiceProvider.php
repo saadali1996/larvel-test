@@ -16,6 +16,8 @@ class EventServiceProvider extends ServiceProvider
         'Common\Auth\Events\UserCreated' => [
             'App\Listeners\CreateWatchlist',
         ],
+        'Common\Auth\Events\UsersDeleted' => ['App\Listeners\DeleteUserLists',
+        ],
     ];
 
     /**

@@ -18,7 +18,7 @@ class AnalyticsCredentialsValidator
         $this->setConfigDynamically($settings);
 
         try {
-            app(GetGoogleAnalyticsData::class)->execute();
+            app(GetGoogleAnalyticsData::class)->execute(null);
         } catch (Exception $e) {
             return $this->getErrorMessage($e);
         }

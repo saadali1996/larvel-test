@@ -3,9 +3,9 @@
 use App\User;
 use Auth;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class ConfirmEmailController extends Controller
+class ConfirmEmailController extends BaseController
 {
     /**
      * @var Request

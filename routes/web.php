@@ -60,6 +60,8 @@ Route::group(['prefix' => 'secure'], function () {
     // images
     Route::post('images', 'ImagesController@store');
     Route::delete('images', 'ImagesController@destroy');
+    Route::post('titles/{id}/images/change-order', 'ImageOrderController@changeOrder');
+
 
     // reviews
     Route::get('reviews', 'ReviewController@index');
@@ -78,9 +80,12 @@ Route::group(['prefix' => 'secure'], function () {
     Route::get('videos', 'VideosController@index');
     Route::post('videos', 'VideosController@store');
     Route::put('videos/{id}', 'VideosController@update');
-    Route::delete('videos', 'VideosController@destroy');
+    Route::delete('videos/{ids}', 'VideosController@destroy');
     Route::post('videos/{id}/rate', 'VideoRatingController@rate');
-    Route::post('titles/{id}/videos/change-order', 'VideoOrderController@changeOrder');
+    Route::post('videos/{video}/approve', 'VideoApproveController@approve');
+    Route::post('videos/{video}/disapprove', 'VideoApproveController@disapprove');
+    Route::post('videos/{video}/report', 'VideoReportController@report');
+    Route::post('titles/{video}/videos/change-order', 'VideoOrderController@changeOrder');
 
     // title tags
     Route::post('titles/{titleId}/tags', 'TitleTagsController@store');
@@ -89,17 +94,32 @@ Route::group(['prefix' => 'secure'], function () {
     // import
     Route::post('media/import', 'ImportMediaController@importMediaItem');
     Route::get('tmdb/import', 'ImportMediaController@importViaBrowse');
+
+    // APP\CAPTION
+    Route::apiResource('caption', 'CaptionController');
+    Route::post('caption/{videoId}/order', 'CaptionOrderController@changeOrder');
 });
 
 // FRONT-END ROUTES THAT NEED TO BE PRE-RENDERED
 $homeController = '\Common\Core\Controllers\HomeController@show';
 Route::get('/', 'HomepageContentController@show')->middleware('prerenderIfCrawler');
 Route::get('browse', 'TitleController@index')->middleware('prerenderIfCrawler');
-Route::get('titles/{id}', 'TitleController@show')->middleware('prerenderIfCrawler');
-Route::get('titles/{id}/season/{season}/episode/{episode}', 'TitleController@show')->middleware('prerenderIfCrawler');
-Route::get('titles/{id}/season/{season}', 'TitleController@show')->middleware('prerenderIfCrawler');
+
+// TITLE SHOW
+Route::get('titles/{id}', 'TitleController@showWithoutNameParam')->middleware('prerenderIfCrawler');
+Route::get('titles/{id}/{name}', 'TitleController@show')->middleware('prerenderIfCrawler');
+
+// EPISODE SHOW
+Route::get('titles/{id}/season/{season}/episode/{episode}', 'TitleController@showWithoutNameParam')->middleware('prerenderIfCrawler');
+Route::get('titles/{id}/{name}/season/{season}/episode/{episode}', 'TitleController@show')->middleware('prerenderIfCrawler');
+
+// SEASON SHOW
+Route::get('titles/{id}/season/{season}', 'TitleController@showWithoutNameParam')->middleware('prerenderIfCrawler');
+Route::get('titles/{id}/{name}/season/{season}', 'TitleController@show')->middleware('prerenderIfCrawler');
+
 Route::get('people', 'PersonController@index')->middleware('prerenderIfCrawler');
 Route::get('people/{id}', 'PersonController@show')->middleware('prerenderIfCrawler');
+Route::get('people/{id}/{name}', 'PersonController@show')->middleware('prerenderIfCrawler');
 Route::get('news', 'NewsController@index')->middleware('prerenderIfCrawler');
 Route::get('news/{id}', 'NewsController@show')->middleware('prerenderIfCrawler');
 Route::get('lists/{id}', 'ListController@show')->middleware('prerenderIfCrawler');

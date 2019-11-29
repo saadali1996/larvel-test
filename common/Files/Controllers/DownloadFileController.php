@@ -3,11 +3,11 @@
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Files\FileEntry;
 use ZipArchive;
 
-class DownloadFileController extends Controller
+class DownloadFileController extends BaseController
 {
     /**
      * @var Request

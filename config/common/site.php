@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'extra_bootstrap_data' => \App\Services\AppBootstrapData::class,
     'version' => env('APP_VERSION'),
     'demo'    => env('IS_DEMO_SITE', false),
     'disable_update_auth' => env('DISABLE_UPDATE_AUTH', false),

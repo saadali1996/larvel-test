@@ -2,11 +2,11 @@
 
 namespace Common\Files\Controllers;
 
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Files\FileEntry;
 use Illuminate\Http\Request;
 
-class AddPreviewTokenController extends Controller
+class AddPreviewTokenController extends BaseController
 {
     /**
      * @var Request

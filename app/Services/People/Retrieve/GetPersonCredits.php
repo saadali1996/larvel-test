@@ -89,7 +89,7 @@ class GetPersonCredits
 
         // remove any data not needed to render person filmography
         $credits = $credits->map(function (Title $credit) {
-            unset($credit['poster'], $credit['backdrop']);
+            unset($credit['backdrop']);
             return $credit;
         })->groupBy('pivot.department');
 

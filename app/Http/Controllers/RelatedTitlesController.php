@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Services\Titles\GetRelatedTitles;
 use App\Title;
 use App\Video;
-use Common\Core\Controller;
+use Common\Core\BaseController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class RelatedTitlesController extends Controller
+class RelatedTitlesController extends BaseController
 {
     /**
      * @var Title
@@ -21,7 +22,6 @@ class RelatedTitlesController extends Controller
     private $request;
 
     /**
-     * RelatedVideosController constructor.
      * @param Request $request
      * @param Title $title
      */
@@ -33,7 +33,7 @@ class RelatedTitlesController extends Controller
 
     /**
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function index($id)
     {

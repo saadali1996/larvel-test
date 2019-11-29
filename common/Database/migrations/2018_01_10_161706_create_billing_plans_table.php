@@ -16,7 +16,7 @@ class CreateBillingPlansTable extends Migration
         Schema::create('billing_plans', function(Blueprint $table) {
             $table->increments('id');
             $table->string('name');
-            $table->integer('amount');
+            $table->integer('amount')->nullable();
             $table->string('currency');
             $table->string('currency_symbol')->default('$');
             $table->string('interval')->default('month');

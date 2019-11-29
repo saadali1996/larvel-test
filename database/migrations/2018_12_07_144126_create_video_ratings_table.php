@@ -16,7 +16,7 @@ class CreateVideoRatingsTable extends Migration
         Schema::create('video_ratings', function (Blueprint $table) {
             $table->increments('id');
             $table->string('rating', 20);
-            $table->integer('user_id')->unsigned()->index();
+            $table->integer('user_id')->unsigned()->nullable()->index();
             $table->integer('video_id')->unsigned()->index();
             $table->string('user_ip', 20)->index();
 

@@ -3,11 +3,11 @@
 namespace Common\Admin\Console;
 
 use Artisan;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Settings\Setting;
 use Illuminate\Http\Request;
 
-class ArtisanController extends Controller
+class ArtisanController extends BaseController
 {
     /**
      * @var Request

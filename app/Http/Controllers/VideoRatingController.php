@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Video;
 use App\VideoRating;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Illuminate\Http\Request;
 use App\Services\Videos\RateVideo;
 
-class VideoRatingController extends Controller
+class VideoRatingController extends BaseController
 {
     /**
      * @var Video

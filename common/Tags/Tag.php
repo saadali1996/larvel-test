@@ -4,15 +4,19 @@ namespace Common\Tags;
 
 use Common\Files\FileEntry;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
 class Tag extends Model
 {
     protected $hidden = ['pivot'];
+    protected $guarded = ['id'];
     protected $casts = ['id' => 'integer'];
 
+    const DEFAULT_TYPE = 'default';
+
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
+     * @return MorphToMany
      */
     public function files()
     {
@@ -50,13 +54,24 @@ class Tag extends Model
     }
 
     /**
-     * @param Collection $tags
+     * @param Collection|array $tags
      * @return Collection|Tag[]
      */
-    public function insertOrRetrieve(Collection $tags)
+    public function insertOrRetrieve($tags)
     {
+        if ( ! $tags instanceof Collection) {
+            $tags = collect($tags);
+        }
+
+        if (is_string($tags->first())) {
+            $tags = $tags->map(function($tag) {
+                return ['name' => $tag, 'type' => 'custom'];
+            });
+        }
+
         $tags = $tags->toLower('name');
-        $existing = $this->getByNames($tags->pluck('name'), $tags->first()['type']);
+        $tagType = $tags->first()['type'];
+        $existing = $this->getByNames($tags->pluck('name'), $tagType);
 
         $new = $tags->filter(function($tag) use($existing) {
             return !$existing->contains('name', strtolower($tag['name']));
@@ -64,7 +79,7 @@ class Tag extends Model
 
         if ($new->isNotEmpty()) {
             $this->insert($new->toArray());
-            return $this->getByNames($tags->pluck('name'), $tags->first()['type']);
+            return $this->getByNames($tags->pluck('name'), $tagType);
         } else {
             return $existing;
         }
@@ -80,5 +95,14 @@ class Tag extends Model
         $query = $this->whereIn('name', $names);
         if ($type) $query->where('type', $type);
         return $query->get()->toLower('name');
+    }
+
+    /**
+     * @param string $value
+     * @return string
+     */
+    public function getDisplayNameAttribute($value)
+    {
+        return $value ? $value : $this->attributes['name'];
     }
 }

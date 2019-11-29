@@ -2,12 +2,14 @@
 
 use App\User;
 use Common\Billing\BillingPlan;
+use Common\Billing\GatewayException;
 use Common\Billing\Subscription;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Omnipay\Common\Exception\InvalidCreditCardException;
 
-class StripeController extends Controller
+class StripeController extends BaseController
 {
     /**
      * @var Request
@@ -30,8 +32,6 @@ class StripeController extends Controller
     private $stripe;
 
     /**
-     * SubscriptionsController constructor.
-     *
      * @param Request $request
      * @param BillingPlan $billingPlan
      * @param Subscription $subscription
@@ -55,7 +55,7 @@ class StripeController extends Controller
     /**
      * Create a new subscription on stripe.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function createSubscription()
     {
@@ -71,14 +71,14 @@ class StripeController extends Controller
         $sub = $this->stripe->subscriptions()->create($plan, $user, $this->request->get('start_date'));
         $user->subscribe('stripe', $sub['reference'], $plan);
 
-        return $this->success(['user' => $user]);
+        return $this->success(['user' => $user->load('permissions', 'subscriptions.plan')]);
     }
 
     /**
      * Add a new bank card to user using stripe token.
      *
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Common\Billing\GatewayException
+     * @return JsonResponse
+     * @throws GatewayException
      */
     public function addCard()
     {
@@ -92,6 +92,6 @@ class StripeController extends Controller
             return $this->error(['general' => $e->getMessage()]);
         }
 
-        return $this->success(['user' => $user]);
+        return $this->success(['user' => $user->load('permissions', 'subscriptions.plan')]);
     }
 }

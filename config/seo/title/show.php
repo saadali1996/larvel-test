@@ -106,16 +106,6 @@ return [
                 "ratingValue" => "{{TITLE.RATING}}"
             ],
             "duration" => "{{TITLE.RUNTIME}}",
-            "trailer" => [
-                '_type' => 'loop',
-                'returnFirstOnly' => true,
-                'dataSelector' => 'TITLE.VIDEOS',
-                'template' => [
-                    "@type" => "VideoObject",
-                    "name" => "{{VIDEO.NAME}}",
-                    "embedUrl" => "{{VIDEO.URL}}",
-                ]
-            ]
         ]
     ]
 ];

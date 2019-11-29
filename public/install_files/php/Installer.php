@@ -1,18 +1,15 @@
 <?php
 
 use App\User;
+use Common\Auth\Permissions\Permission;
 use Common\Settings\DotEnvEditor;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Installer
 {
-    /**
-     * @var string Application base path.
-     */
     protected $baseDirectory;
 
-    /**
-     * Constructor/Router
-     */
     public function __construct()
     {
         $this->baseDirectory = PATH_INSTALL;
@@ -45,9 +42,10 @@ class Installer
     {
         $this->log('Check requirements: start');
 
+        $this->createHtaccessFiles();
+
         $result = [
             'PHP Version' => ['result' => version_compare(PHP_VERSION, MINIMUM_VERSION, '>'), 'errorMessage' => 'You need at least ' . MINIMUM_VERSION . ' PHP Version to install.'],
-            'PROC_OPEN' => ['result' => function_exists('proc_open'), 'errorMessage' => 'PHP proc_open function needs to be enabled.'],
             'PDO' => ['result' => defined('PDO::ATTR_DRIVER_NAME'), 'errorMessage' => 'PHP PDO extension is required.',],
             'Mbstring' => ['result' => extension_loaded('mbstring'), 'errorMessage' => 'PHP mbstring extension is required.',],
             'Fileinfo' => ['result' => extension_loaded('fileinfo'), 'errorMessage' => 'PHP fileinfo extension is required.'],
@@ -80,30 +78,37 @@ class Installer
             'resources/views/emails/custom',
         ];
 
-        $message = 'Make this directory writable by giving it 777 permissions via file manager.';
-
         $results = [];
-
         foreach ($directories as $directory) {
             $path = rtrim("{$this->baseDirectory}/$directory", '/');
             $writable = is_writable($path);
-            $results[] = ['path' => $path, 'result' => $writable, 'errorMessage' => $writable ? '' : $message];
+            $result = ['path' => $path, 'result' => $writable, 'errorMessage' => ''];
+            if ( ! $writable) {
+                $result['errorMessage'] = is_dir($path) ?
+                    'Make this directory writable by giving it 0755 or 0777 permissions via file manager.' :
+                    'Make this directory writable by giving it 644 permissions via file manager.';
+            }
+
+            $results[] = $result;
         }
 
         $files = [
-            '.env.example',
             '.htaccess',
             'public/.htaccess',
         ];
 
-        foreach ($files as $file) {
-            $filePath = "{$this->baseDirectory}/$file";
-            $writable = is_writable($filePath);
-            $content = $writable ? trim(file_get_contents($filePath)) : '';
-
+        if ( ! $this->fileExistsAndNotEmpty('.env') && ! $this->fileExistsAndNotEmpty('.env.example')) {
             $results[] = [
-                'path' => $filePath,
-                'result' => $writable && strlen($content),
+                'path' => $this->baseDirectory,
+                'result' => false,
+                'errorMessage' => "Make sure <strong>.env.example</strong> or <strong>.env</strong> file has been uploaded properly to the directory above and is writable.",
+            ];
+        }
+
+        foreach ($files as $file) {
+            $results[] = [
+                'path' => "{$this->baseDirectory}/$file",
+                'result' => $this->fileExistsAndNotEmpty($file),
                 'errorMessage' => "Make sure <strong>$file</strong> file has been uploaded properly to your server and is writable."
             ];
         }
@@ -115,6 +120,18 @@ class Installer
         $this->log('Check filesystem: end', $results, ($allPass ? '+OK' : '=FAIL'));
 
         return $results;
+    }
+
+    /**
+     * @param string $path
+     * @return bool
+     */
+    protected function fileExistsAndNotEmpty($path)
+    {
+        $filePath = "{$this->baseDirectory}/$path";
+        $writable = is_writable($filePath);
+        $content = $writable ? trim(file_get_contents($filePath)) : '';
+        return $writable && strlen($content);
     }
 
     protected function onValidateAndInsertDatabaseCredentials()
@@ -173,17 +190,43 @@ class Installer
     {
         $this->bootFramework();
 
-        //fix "index is too long" issue on MariaDB and older mysql versions
+        // Fix "index is too long" issue on MariaDB and older mysql versions
         Schema::defaultStringLength(191);
 
-        Artisan::call('key:generate', ['--force' => true]);
-        Artisan::call('migrate', ['--force' => true]);
+        // Generate key
+        $appKey = 'base64:'.base64_encode(random_bytes(
+            config('app.cipher') == 'AES-128-CBC' ? 16 : 32
+        ));
+        $writer = app(DotEnvEditor::class);
+        $writer->write([
+            'app_key' => $appKey,
+        ]);
+
+        // Migrate
+        app('migration.repository')->createRepository();
+        $migrator = app('migrator');
+        $paths = $migrator->paths();
+        $paths[] = app('path.database').DIRECTORY_SEPARATOR.'migrations';
+        $migrator->run($paths);
 
         $this->createAdminAccount();
-        Artisan::call('watchlist:create');
 
-        Artisan::call('db:seed', ['--force' => true]);
-        Artisan::call('common:seed');
+        // Seed
+        $seeder = app(DatabaseSeeder::class);
+        $seeder->setContainer(app());
+        Model::unguarded(function() use($seeder) {
+            $seeder->__invoke();
+        });
+
+        // Common seed
+        $paths = File::files(app('path.common').'/Database/Seeds');
+        foreach ($paths as $path) {
+            Model::unguarded(function() use($path) {
+                $namespace = 'Common\Database\Seeds\\'.basename($path, '.php');
+                $seeder = app($namespace)->setContainer(app());
+                $seeder->__invoke();
+            });
+        }
 
         $this->putAppInProductionEnv();
 
@@ -203,9 +246,18 @@ class Installer
         $user->username = $this->post('username');
         $user->email = $email;
         $user->password = Hash::make($this->post('password'));
-        $user->permissions = ['admin' => 1, 'superAdmin' => 1];
+        $user->api_token = Str::random(40);
         $user->save();
-
+        $adminPermission = app(Permission::class)->firstOrCreate(
+            ['name' => 'admin'],
+            [
+                'name' => 'admin',
+                'group' => 'admin',
+                'display_name' => 'Super Admin',
+                'description' => 'Give all permissions to user.',
+            ]
+        );
+        $user->permissions()->attach($adminPermission->id);
         Auth::login($user);
     }
 
@@ -242,6 +294,33 @@ class Installer
             'app_debug' => false,
             'installed' => true,
         ]);
+    }
+
+    protected function createHtaccessFiles($force = false, $alternative = false) {
+        $rootHtaccess = "{$this->baseDirectory}/.htaccess";
+        $rootHtaccessStub = "{$this->baseDirectory}/public/install_files/stubs/root-htaccess.txt";
+        $publicHtaccess = "{$this->baseDirectory}/public/.htaccess";
+        $publicHtaccessStub = "{$this->baseDirectory}/public/install_files/stubs/public-htaccess.txt";
+        $parts = parse_url($this->getBaseUrl());
+
+        if ( ! file_exists($rootHtaccess) || $force) {
+            $contents = file_get_contents($rootHtaccessStub);
+            if ($alternative) {
+                $path = isset($parts['path']) ? $parts['path'] : '/';
+                $contents = str_replace('# RewriteBase /', "RewriteBase $path", $contents);
+            }
+            file_put_contents($rootHtaccess, $contents);
+        }
+
+        if ( ! file_exists($publicHtaccess) || $force) {
+            $contents = file_get_contents($publicHtaccessStub);
+            if ($alternative) {
+                $path = isset($parts['path']) ? $parts['path'] : '';
+                $contents = str_replace('index.php', "{$path}/index.php", $contents);
+                $contents = str_replace('# RewriteBase /', "RewriteBase $path", $contents);
+            }
+            file_put_contents($publicHtaccess, $contents);
+        }
     }
 
     private function deleteInstallationFiles()
@@ -326,7 +405,7 @@ class Installer
         return $default;
     }
 
-    public function getBaseUrl()
+    public function getBaseUrl($suffix = null)
     {
         if (isset($_SERVER['HTTP_HOST'])) {
             $baseUrl = !empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off' ? 'https' : 'http';
@@ -339,8 +418,9 @@ class Installer
         $baseUrl = rtrim($baseUrl, '/');
         $baseUrl = preg_replace('/\/public$/', '', $baseUrl);
         $baseUrl = str_replace('install_files', '', $baseUrl);
+        $baseUrl = trim($baseUrl);
 
-        return trim($baseUrl);
+        return $suffix ? "$baseUrl/$suffix" : $baseUrl;
     }
 
     public function e($value)

@@ -2,21 +2,17 @@
 
 use Illuminate\Http\Request;
 use Common\Auth\UserRepository;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Illuminate\Http\JsonResponse;
 
-class UserPermissionsController extends Controller
+class UserPermissionsController extends BaseController
 {
     /**
-     * UserRepository instance.
-     *
      * @var UserRepository
      */
     private $repository;
 
     /**
-     * Laravel request instance.
-     *
      * @var Request
      */
     private $request;
@@ -32,8 +28,6 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     * Add specified permissions to user.
-     *
      * @param int $userId
      * @return JsonResponse
      */
@@ -54,8 +48,6 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     * Remove specified permissions from user.
-     *
      * @param int $userId
      * @return JsonResponse
      */

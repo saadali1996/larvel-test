@@ -66,7 +66,9 @@ class GoogleLoginValidator implements SettingsValidator
             return null;
         }
 
-        $message = strtolower(Arr::get($errResponse, 'error.errors.0.message', ''));
-        return ['google_group' => 'These google credentials are not valid.'];
+        $msg1 = Arr::get($errResponse, 'error.errors.0.message', '');
+        $msg2 = Arr::get($errResponse, 'error_description', '');
+        $message = strtolower($msg1 ?: $msg2);
+        return ['google_group' => "Could not validate these credentials: $message"];
     }
 }

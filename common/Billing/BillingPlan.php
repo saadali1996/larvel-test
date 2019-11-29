@@ -1,8 +1,13 @@
 <?php namespace Common\Billing;
 
+use Common\Auth\Permissions\Permission;
+use Carbon\Carbon;
+use Common\Auth\Permissions\Traits\HasPermissionsRelation;
 use Common\Files\Traits\SetsAvailableSpaceAttribute;
-use Common\Auth\FormatsPermissions;
+use Eloquent;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
  * @property int $id
@@ -17,14 +22,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $uuid
  * @property string $paypal_id
  * @property string $features
- * @property \Carbon\Carbon|null $created_at
- * @property \Carbon\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read BillingPlan $parent
- * @mixin \Eloquent
+ * @property-read Collection|Permission[] $permissions
+ * @mixin Eloquent
  */
 class BillingPlan extends Model
 {
-    use FormatsPermissions, SetsAvailableSpaceAttribute;
+    use HasPermissionsRelation, SetsAvailableSpaceAttribute;
 
     protected $guarded = ['id'];
 
@@ -43,15 +49,6 @@ class BillingPlan extends Model
     {
         if ($this->parent_id && $this->parent) {
             return $this->parent->features;
-        }
-
-        return json_decode($value, true) ?: [];
-    }
-
-    public function getPermissionsAttribute($value)
-    {
-        if ($this->parent_id && $this->parent) {
-            return $this->parent->getPermissionsAttribute($value);
         }
 
         return json_decode($value, true) ?: [];

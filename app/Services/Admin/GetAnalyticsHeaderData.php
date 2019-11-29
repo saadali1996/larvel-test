@@ -25,8 +25,6 @@ class GetAnalyticsHeaderData implements GetAnalyticsHeaderDataAction
     private $person;
 
     /**
-     * GetAnalyticsHeaderData constructor.
-     *
      * @param Title $title
      * @param User $user
      * @param Person $person
@@ -38,7 +36,7 @@ class GetAnalyticsHeaderData implements GetAnalyticsHeaderDataAction
         $this->person = $person;
     }
 
-    public function execute()
+    public function execute($channel)
     {
         return [
             [

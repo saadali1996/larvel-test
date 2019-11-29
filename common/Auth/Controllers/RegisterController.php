@@ -1,16 +1,17 @@
 <?php namespace Common\Auth\Controllers;
 
+use Common\Core\Bootstrap\BootstrapData;
+use Illuminate\Http\JsonResponse;
 use Mail;
 use App\User;
-use Common\Core\BootstrapData;
 use Common\Mail\ConfirmEmail;
 use Common\Settings\Settings;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Auth\UserRepository;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
-class RegisterController extends Controller
+class RegisterController extends BaseController
 {
     use RegistersUsers;
 
@@ -49,8 +50,8 @@ class RegisterController extends Controller
     /**
      * Handle a registration request for the application.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
      */
     public function register(Request $request)
     {
@@ -70,7 +71,12 @@ class RegisterController extends Controller
             $params['confirmed'] = 0;
         }
 
-        $user = $this->create($params);
+        try {
+            $user = $this->create($params);
+        } catch (\Exception $e) {
+            if ($e->getCode() !== 422) throw ($e);
+            return $this->error(['*' => $e->getMessage()]);
+        }
 
         if ($needsConfirmation) {
             Mail::queue(new ConfirmEmail($params['email'], $code));
@@ -99,11 +105,11 @@ class RegisterController extends Controller
      * @param Request $request
      * @param $user
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     protected function registered(Request $request, User $user)
     {
-        $data = $this->bootstrapData->get();
+        $data = $this->bootstrapData->init()->getEncoded();
         return $this->success(['data' => $data]);
     }
 }

@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Episode;
 use App\Season;
 use App\Title;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Illuminate\Http\Request;
 
-class SeasonController extends Controller
+class SeasonController extends BaseController
 {
     /**
      * @var Request

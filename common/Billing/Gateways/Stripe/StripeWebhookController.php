@@ -1,10 +1,12 @@
 <?php namespace Common\Billing\Webhooks;
 
+use Common\Billing\Gateways\GatewayFactory;
+use Common\Billing\Gateways\Stripe\StripeGateway;
+use Common\Billing\Invoices\CrupdateInvoice;
 use Common\Billing\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Common\Billing\Gateways\GatewayFactory;
-use Common\Billing\Gateways\Stripe\StripeGateway;
+use Symfony\Component\HttpFoundation\Response;
 
 class StripeWebhookController extends Controller
 {
@@ -19,8 +21,6 @@ class StripeWebhookController extends Controller
     private $subscription;
 
     /**
-     * StripeWebhookController constructor.
-     *
      * @param GatewayFactory $gatewayFactory
      * @param Subscription $subscription
      */
@@ -31,10 +31,8 @@ class StripeWebhookController extends Controller
     }
 
     /**
-     * Handle a Stripe webhook call.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param Request $request
+     * @return Response
      */
     public function handleWebhook(Request $request)
     {
@@ -58,7 +56,7 @@ class StripeWebhookController extends Controller
      * Handle a cancelled customer from a Stripe subscription.
      *
      * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return Response
      */
     protected function handleSubscriptionDeleted($payload)
     {
@@ -77,7 +75,7 @@ class StripeWebhookController extends Controller
      * Handle a renewed stripe subscription.
      *
      * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return Response
      */
     protected function handleSubscriptionRenewed($payload)
     {
@@ -88,6 +86,10 @@ class StripeWebhookController extends Controller
         if ($subscription) {
             $stripeSubscription = $this->gateway->subscriptions()->find($subscription);
             $subscription->fill(['renews_at' => $stripeSubscription['renews_at']])->save();
+            app(CrupdateInvoice::class)->execute([
+                'subscription_id' => $subscription->id,
+                'paid' => true,
+            ]);
         }
 
         return response('Webhook Handled', 200);

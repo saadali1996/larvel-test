@@ -34,25 +34,19 @@ class ContactPageMessage extends Notification
      * Get the mail representation of the notification.
      *
      * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
         $siteName = app(Settings::class)->get('branding.site_name');
         $userEmail = $this->message['email'];
 
-        // ses only allows sending emails from authorized addresses
-        // so should send mail from address specified in config
-        $useDefaults = config('mail.driver') === 'ses';
-
         return (new MailMessage)
             ->subject("New message via $siteName contact page.")
             ->greeting("New message via $siteName contact page from '$userEmail'")
             ->salutation(' ')
-            ->from(
-                $useDefaults ? config('mail.from.address') : $userEmail,
-                $useDefaults ? config('mail.from.name') : $this->message['name']
-            )
+            ->from(config('mail.from.address'), config('mail.from.name'))
+            ->replyTo($userEmail, $this->message['name'])
             ->line($this->message['message']);
     }
 

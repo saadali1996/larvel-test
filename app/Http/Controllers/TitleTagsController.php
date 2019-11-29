@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Title;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Tags\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class TitleTagsController extends Controller
+class TitleTagsController extends BaseController
 {
     /**
      * @var Request

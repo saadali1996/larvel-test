@@ -1,14 +1,15 @@
 <?php namespace Common\Auth\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Log;
 use Auth;
 use Exception;
 use Common\Auth\Oauth;
 use Illuminate\Http\Request;
 use Common\Settings\Settings;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class SocialAuthController extends Controller
+class SocialAuthController extends BaseController
 {
     /**
      * @var Oauth
@@ -130,23 +131,23 @@ class SocialAuthController extends Controller
      * that were needed to complete social login.
      * (Password, email, purchase code etc)
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function extraCredentials()
     {
-        //get data for this social login persisted in session
+        // get data for this social login persisted in session
         $data = $this->oauth->getPersistedData();
 
-        if (!$data) return $this->error();
+        if ( ! $data) return $this->error();
 
-        //validate user supplied extra credentials
+        // validate user supplied extra credentials
         $errors = $this->oauth->validateExtraCredentials($this->request->all());
 
-        if (!empty($errors)) {
+        if ( ! empty($errors)) {
             return $this->error($errors);
         }
 
-        if (!isset($data['profile']->email)) {
+        if ( ! isset($data['profile']->email)) {
             $data['profile']->email = $this->request->get('email');
         }
 

@@ -1,14 +1,20 @@
 <?php namespace Common\Database\Seeds;
 
+use Common\Auth\Permissions\Permission;
+use Common\Auth\Permissions\Traits\SyncsPermissions;
 use DB;
 use Carbon\Carbon;
 use App\User;
 use Common\Auth\Roles\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 
 class RolesTableSeeder extends Seeder
 {
+    use SyncsPermissions;
+
     /**
      * @var Role
      */
@@ -20,20 +26,30 @@ class RolesTableSeeder extends Seeder
     private $user;
 
     /**
-     * RolesTableSeeder constructor.
-     *
+     * @var Permission
+     */
+    private $permission;
+
+    /**
+     * @var Filesystem
+     */
+    private $fs;
+
+    /**
      * @param Role $role
      * @param User $user
+     * @param Permission $permission
+     * @param Filesystem $fs
      */
-    public function __construct(Role $role, User $user)
+    public function __construct(Role $role, User $user, Permission $permission, Filesystem $fs)
     {
         $this->user = $user;
         $this->role = $role;
+        $this->permission = $permission;
+        $this->fs = $fs;
     }
 
     /**
-     * Run the database seeds.
-     *
      * @return void
      */
     public function run()
@@ -46,10 +62,26 @@ class RolesTableSeeder extends Seeder
 
     private function createOrUpdateRole($type, $name)
     {
-        $defaultPermissions = config("common.permissions.roles.$name");
+        $defaultPermissions = array_merge_recursive(
+            $this->fs->getRequire(app('path.common') . '/resources/defaults/permissions.php'),
+            $this->fs->getRequire(resource_path('defaults/permissions.php'))
+        )['roles'][$name];
+
+        $defaultPermissions = array_map(function($permission) {
+            return is_string($permission) ? ['name' => $permission] : $permission;
+        }, $defaultPermissions);
+
+        $dbPermissions = $this->permission->whereIn('name', collect($defaultPermissions)->pluck('name'))->get();
+        $dbPermissions->map(function(Permission $permission) use($defaultPermissions) {
+            $defaultPermission = collect($defaultPermissions)->where('name', $permission['name'])->first();
+            $permission['restrictions'] = Arr::get($defaultPermission, 'restrictions') ?: [];
+            return $permission;
+        });
+
         $role = $this->role->firstOrCreate([$type => 1], [$type => 1, 'name' => $name]);
-        $role->permissions = array_merge($role->permissions, $defaultPermissions);
+        $this->syncPermissions($role, $role->permissions->concat($dbPermissions));
         $role->save();
+
         return $role;
     }
 

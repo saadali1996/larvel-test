@@ -5,9 +5,9 @@ namespace Common\Files\Controllers;
 use Common\Files\Actions\Deletion\RestoreEntries;
 use Common\Files\FileEntry;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class RestoreDeletedEntriesController extends Controller
+class RestoreDeletedEntriesController extends BaseController
 {
     /**
      * @var Request

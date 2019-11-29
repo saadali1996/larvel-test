@@ -34,7 +34,7 @@ class CreateTitles extends Migration {
 			$table->string('runtime')->nullable();
 			$table->string('trailer')->nullable();
 			$table->string('budget')->nullable();
-			$table->string('revenue')->nullable();
+			$table->string('revenue')->nullable()->index();
 			$table->bigInteger('views')->default(1);
 			$table->integer('tmdb_popularity')->unsigned()->nullable();
 			$table->string('imdb_id')->nullable();
@@ -49,6 +49,7 @@ class CreateTitles extends Migration {
 
             $table->collation = config('database.connections.mysql.collation');
             $table->charset = config('database.connections.mysql.charset');
+            $table->engine = 'InnoDB';
 		});
 	}
 

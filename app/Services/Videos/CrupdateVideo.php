@@ -5,6 +5,8 @@ namespace App\Services\Videos;
 use App\Episode;
 use App\Season;
 use App\Video;
+use Auth;
+use Common\Settings\Settings;
 use Illuminate\Support\Arr;
 
 class CrupdateVideo
@@ -45,20 +47,27 @@ class CrupdateVideo
     {
         if (Arr::get($params, 'season')) {
             $episode = $this->getOrCreateEpisode($params);
-            $params['episode_id'] = $episode->id;
         }
 
         $params['positive_votes'] = 0;
         $params['negative_votes'] = 0;
+        $params['source'] = 'local';
 
         if ($videoId) {
             $video = $this->video->findOrFail($videoId);
             $video->fill($params)->save();
         } else {
+            $params['approved'] = $this->shouldAutoApprove() ? true : false;
+            $params['user_id'] = Auth::id();
             $video = $this->video->create($params);
         }
 
         return $video;
+    }
+
+    private function shouldAutoApprove()
+    {
+        return app(Settings::class)->get('streaming.auto_approve') || Auth::user()->hasPermission('admin');
     }
 
     private function getOrCreateEpisode($params)

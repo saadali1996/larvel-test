@@ -30,7 +30,7 @@ class AddAvailableSpaceToUsersTable extends Migration
         if ( ! Schema::hasColumn('users', 'available_space')) return;
 
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('space_available');
+            $table->dropColumn('available_space');
         });
     }
 }

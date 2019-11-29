@@ -108,4 +108,19 @@ class UrlGenerator extends BaseUrlGenerator
             return $item['poster'] ?: $item['url'];
         }
     }
+
+    /**
+     * @param array $data
+     * @return string
+     */
+    public function mediaItem($data)
+    {
+        if (isset($data['title'])) {
+            return $this->title($data['title']);
+        } else if (isset($data['person'])) {
+            $this->person($data['person']);
+        } else {
+            return url('');
+        }
+    }
 }

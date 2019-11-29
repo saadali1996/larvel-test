@@ -2,6 +2,7 @@
 
 namespace Common\Settings\Validators;
 
+use Aws\S3\Exception\S3Exception;
 use Common\Files\Providers\BackblazeServiceProvider;
 use Config;
 use Storage;
@@ -52,8 +53,16 @@ class StorageCredentialsValidator
                 $disk->has('foo-bar');
             }
         } catch (Exception $e) {
-            return ['storage_group' => "These $driverName credentials are not valid."];
+            if (config('common.site.uploads_disk') === 'uploads_s3') {
+                return $this->getS3Message($e);
+            } else {
+                return ['storage_group' => "Invalid $driverName credentials.<br>{$e->getMessage()}"];
+            }
         }
+    }
+
+    private function getS3Message(S3Exception $e) {
+        return ['storage_group' => "Could not validate credentials. <br> {$e->getAwsErrorMessage()}"];
     }
 
     private function setConfigDynamically($settings)

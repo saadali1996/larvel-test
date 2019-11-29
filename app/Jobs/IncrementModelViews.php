@@ -1,8 +1,7 @@
 <?php namespace App\Jobs;
 
-use App\Person;
-use App\Title;
 use Carbon\Carbon;
+use DB;
 use Illuminate\Bus\Queueable;
 use Illuminate\Session\Store;
 use Illuminate\Queue\SerializesModels;
@@ -15,18 +14,22 @@ class IncrementModelViews implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * @var Person|Title
+     * @var int
      */
-    private $model;
+    private $modelId;
+    /**
+     * @var string
+     */
+    private $type;
 
     /**
-     * Create a new command instance.
-     *
-     * @param Person|Title $model
+     * @param 'person'|'title' $type
+     * @param int $modelId
      */
-    public function __construct($model)
+    public function __construct($type, $modelId)
     {
-        $this->model = $model;
+        $this->type = $type;
+        $this->modelId = $modelId;
     }
 
     /**
@@ -39,7 +42,7 @@ class IncrementModelViews implements ShouldQueue
     {
         if ( ! $this->shouldIncrement($session)) return;
 
-        $session->put("{$this->model->type}-views.{$this->model->id}", Carbon::now()->timestamp);
+        $session->put("{$this->type}-views.{$this->modelId}", Carbon::now()->timestamp);
 
         $this->incrementViews();
     }
@@ -52,13 +55,13 @@ class IncrementModelViews implements ShouldQueue
      */
     private function shouldIncrement(Store $session)
     {
-        $views = $session->get("{$this->model->type}-views");
+        $views = $session->get("{$this->type}-views");
 
         //user has not viewed this model yet
-        if ( ! $views || ! isset($views[$this->model->id])) return true;
+        if ( ! $views || ! isset($views[$this->modelId])) return true;
 
         //see if user last viewed this model over 10 hours ago
-        $time = Carbon::createFromTimestamp($views[$this->model->id]);
+        $time = Carbon::createFromTimestamp($views[$this->modelId]);
 
         return Carbon::now()->diffInHours($time) > 10;
     }
@@ -68,6 +71,7 @@ class IncrementModelViews implements ShouldQueue
      */
     private function incrementViews()
     {
-        $this->model->increment('views');
+        $table = $this->type === 'title' ? 'titles' : 'people';
+        DB::table($table)->where('id', $this->modelId)->increment('views');
     }
 }

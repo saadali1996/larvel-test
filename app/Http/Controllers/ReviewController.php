@@ -7,11 +7,11 @@ use App\Review;
 use App\Services\Reviews\UpdateReviewableAverageScore;
 use App\Title;
 use Auth;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Database\Paginator;
 use Illuminate\Http\Request;
 
-class ReviewController extends Controller
+class ReviewController extends BaseController
 {
     /**
      * @var Request
@@ -37,7 +37,7 @@ class ReviewController extends Controller
     {
         $this->authorize('index', Review::class);
 
-        $paginator = (new Paginator($this->review));
+        $paginator = (new Paginator($this->review, $this->request->all()));
         $paginator->searchColumn = 'body';
 
         if ($titleId = $this->request->get('titleId')) {
@@ -49,7 +49,7 @@ class ReviewController extends Controller
             $paginator->query()->whereNotNull('body');
         }
 
-        $pagination = $paginator->paginate($this->request->all());
+        $pagination = $paginator->paginate();
 
         if ($this->request->get('compact')) {
             $pagination->map(function(Review $review) {

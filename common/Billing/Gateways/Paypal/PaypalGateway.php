@@ -1,11 +1,11 @@
 <?php namespace Common\Billing\Gateways\Paypal;
 
-use Omnipay\Omnipay;
-use Illuminate\Http\Request;
-use Omnipay\PayPal\RestGateway;
 use Common\Billing\GatewayException;
 use Common\Billing\Gateways\Contracts\GatewayInterface;
 use Common\Settings\Settings;
+use Illuminate\Http\Request;
+use Omnipay\Omnipay;
+use Omnipay\PayPal\RestGateway;
 
 class PaypalGateway implements GatewayInterface
 {
@@ -67,7 +67,6 @@ class PaypalGateway implements GatewayInterface
      * @param Request $request
      * @return bool
      * @throws GatewayException
-     * @throws \Omnipay\Common\Exception\InvalidResponseException
      */
     public function webhookIsValid(Request $request)
     {

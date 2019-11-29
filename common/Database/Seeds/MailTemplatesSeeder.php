@@ -1,5 +1,6 @@
 <?php namespace Common\Database\Seeds;
 
+use Exception;
 use Illuminate\Database\Seeder;
 use Common\Mail\MailTemplates;
 
@@ -42,7 +43,7 @@ class MailTemplatesSeeder extends Seeder
 
             try {
                 $this->mailTemplates->create($config);
-            } catch(\Exception $e) {
+            } catch(Exception $e) {
                 //
             }
         });

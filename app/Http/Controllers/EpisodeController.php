@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Episode;
 use App\Season;
-use Common\Core\Controller;
+use Carbon\Carbon;
+use Common\Core\BaseController;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class EpisodeController extends Controller
+class EpisodeController extends BaseController
 {
     /**
      * @var Request
@@ -61,7 +62,7 @@ class EpisodeController extends Controller
             'episode_number' => [
                 'integer',
                 Rule::unique('episodes')
-                    ->ignore($episode->episode_number)
+                    ->ignore($episode->episode_number, 'episode_number')
                     ->where(function (Builder $query) use($episode) {
                         $query->where('season_number', $episode->season_number)
                             ->where('title_id', $episode->title_id);
@@ -91,7 +92,7 @@ class EpisodeController extends Controller
             ]
         ]);
 
-        $epNum = $this->request->get('episode_number', $season->episodes_count + 1);
+        $epNum = $this->request->get('episode_number', $season->episode_count + 1);
 
         $episode = $this->episode->create(array_merge(
             $this->request->all(),
@@ -100,6 +101,7 @@ class EpisodeController extends Controller
                 'episode_number' => $epNum,
                 'season_id' => $season->id,
                 'title_id' => $season->title_id,
+                'year' => Carbon::parse($this->request->get('release_date'))->year
             ]
         ));
 

@@ -20,11 +20,7 @@ Route::group(['prefix' => 'secure', 'middleware' => 'web'], function () {
     Route::post('auth/social/{provider}/disconnect', 'Common\Auth\Controllers\SocialAuthController@disconnect');
 
     //USERS
-    Route::get('users', 'Common\Auth\Controllers\UserController@index');
-    Route::get('users/{id}', 'Common\Auth\Controllers\UserController@show');
-    Route::post('users', 'Common\Auth\Controllers\UserController@store');
-    Route::put('users/{id}', 'Common\Auth\Controllers\UserController@update');
-    Route::delete('users/delete-multiple', 'Common\Auth\Controllers\UserController@deleteMultiple');
+    Route::apiResource('users', 'Common\Auth\Controllers\UserController');
 
     //ROLES
     Route::get('roles', 'Common\Auth\Roles\RolesController@index');
@@ -51,34 +47,34 @@ Route::group(['prefix' => 'secure', 'middleware' => 'web'], function () {
 
     //UPLOADS
     Route::get('uploads/server-max-file-size', 'Common\Files\Controllers\ServerMaxUploadSizeController@index');
-	Route::get('uploads', 'Common\Files\Controllers\FileEntriesController@index');
-	Route::get('uploads/download', 'Common\Files\Controllers\DownloadFileController@download');
-	Route::post('uploads/images', 'Common\Files\Controllers\PublicUploadsController@images');
-	Route::post('uploads/videos', 'Common\Files\Controllers\PublicUploadsController@videos');
-	Route::get('uploads/{id}', 'Common\Files\Controllers\FileEntriesController@show');
-	Route::post('uploads', 'Common\Files\Controllers\FileEntriesController@store');
-	Route::put('uploads/{id}', 'Common\Files\Controllers\FileEntriesController@update');
+    Route::get('uploads', 'Common\Files\Controllers\FileEntriesController@index');
+    Route::get('uploads/download', 'Common\Files\Controllers\DownloadFileController@download');
+    Route::post('uploads/images', 'Common\Files\Controllers\PublicUploadsController@images');
+    Route::post('uploads/videos', 'Common\Files\Controllers\PublicUploadsController@videos');
+    Route::post('uploads/favicon', 'Common\Files\Controllers\UploadFaviconController@store');
+    Route::get('uploads/{id}', 'Common\Files\Controllers\FileEntriesController@show');
+    Route::post('uploads', 'Common\Files\Controllers\FileEntriesController@store');
+    Route::put('uploads/{id}', 'Common\Files\Controllers\FileEntriesController@update');
     Route::delete('uploads', 'Common\Files\Controllers\FileEntriesController@destroy');
     Route::post('uploads/{id}/add-preview-token', 'Common\Files\Controllers\AddPreviewTokenController@store');
 
-    //PAGES
-    Route::get('pages', 'Common\Pages\PageController@index');
-    Route::get('pages/{id}', 'Common\Pages\PageController@show');
-    Route::post('pages', 'Common\Pages\PageController@store');
-    Route::put('pages/{id}', 'Common\Pages\PageController@update');
-    Route::delete('pages', 'Common\Pages\PageController@destroy');
+    // PAGES
+    Route::apiResource('page', 'Common\Pages\CustomPageController');
 
     //VALUE LISTS
-    Route::get('value-lists/{names}', 'Common\Core\Controllers\ValueListsController@get');
+    Route::get('value-lists/{names}', 'Common\Core\Values\ValueListsController@index');
 
     //SETTINGS
     Route::get('settings', 'Common\Settings\SettingsController@index');
     Route::post('settings', 'Common\Settings\SettingsController@persist');
 
-    //APPEARANCE EDITOR
+    // APPEARANCE EDITOR
     Route::post('admin/appearance', 'Common\Admin\Appearance\Controllers\AppearanceController@save');
     Route::get('admin/appearance/values', 'Common\Admin\Appearance\Controllers\AppearanceController@getValues');
     Route::get('admin/icons', 'Common\Admin\Appearance\Controllers\IconController@index');
+
+    // CSS THEME
+    Route::apiResource('css-theme', 'Common\Admin\Appearance\Themes\CssThemeController');
 
     //LOCALIZATIONS
     Route::get('localizations', 'Common\Localizations\LocalizationsController@index');
@@ -98,13 +94,10 @@ Route::group(['prefix' => 'secure', 'middleware' => 'web'], function () {
     Route::post('artisan/call', 'Common\Admin\Console\ArtisanController@call');
 
     //billing plans
-    Route::get('billing/plans', 'Common\Billing\Plans\BillingPlansController@index');
-    Route::post('billing/plans', 'Common\Billing\Plans\BillingPlansController@store');
-    Route::post('billing/plans/sync', 'Common\Billing\Plans\BillingPlansController@sync');
-    Route::put('billing/plans/{id}', 'Common\Billing\Plans\BillingPlansController@update');
-    Route::delete('billing/plans', 'Common\Billing\Plans\BillingPlansController@destroy');
+    Route::apiResource('billing-plan', 'Common\Billing\Plans\BillingPlansController');
+    Route::post('billing-plan/sync', 'Common\Billing\Plans\BillingPlansController@sync');
 
-    //subs
+    // SUBSCRIPTIONS
     Route::get('billing/subscriptions', 'Common\Billing\Subscriptions\SubscriptionsController@index');
     Route::post('billing/subscriptions', 'Common\Billing\Subscriptions\SubscriptionsController@store');
     Route::post('billing/subscriptions/stripe', 'Common\Billing\Gateways\Stripe\StripeController@createSubscription');
@@ -116,20 +109,49 @@ Route::group(['prefix' => 'secure', 'middleware' => 'web'], function () {
     Route::post('billing/subscriptions/{id}/change-plan', 'Common\Billing\Subscriptions\SubscriptionsController@changePlan');
     Route::post('billing/stripe/cards/add', 'Common\Billing\Gateways\Stripe\StripeController@addCard');
 
+    // TAGS
+    Route::get('tags', 'Common\Tags\TagController@index');
+
+    // INVOICES
+    Route::get('billing/invoice', 'Common\Billing\Invoices\InvoiceController@index');
+    Route::get('billing/invoice/{uuid}', 'Common\Billing\Invoices\InvoiceController@show');
+
     //contact us page
     Route::post('contact-page', 'Common\Pages\ContactPageController@sendMessage');
     Route::post('recaptcha/verify', 'Common\Validation\RecaptchaController@verify');
 });
 
-//paypal
+// no need for "secure" prefix here, but need "web" middleware
+Route::group(['middleware' => 'web'], function() {
+    Route::get('update', 'App\Http\Controllers\UpdateController@show');
+    Route::get('secure/update', 'App\Http\Controllers\UpdateController@show');
+    Route::post('secure/update/run', 'App\Http\Controllers\UpdateController@update');
+
+    // CUSTOM DOMAIN
+    Route::group(['prefix' => 'secure', 'middleware' => 'customDomainsEnabled'], function() {
+        Route::apiResource('custom-domain', 'Common\Domains\CustomDomainController');
+        Route::post('custom-domain/authorize/{method}', 'Common\Domains\CustomDomainController@authorizeCrupdate')->where('method', 'store|update');
+    });
+
+    // FRONT-END ROUTES THAT NEED TO BE PRE-RENDERED
+    Route::get('pages/{id}/{slug}', 'Common\Pages\CustomPageController@show')->middleware(['web', 'prerenderIfCrawler']);
+});
+
+// NO "WEB" MIDDLEWARE IS APPLIED TO THESE ROUTES
+
+Route::post('secure/password/check', 'Common\Validation\CheckPasswordController@check');
+
+// CUSTOM DOMAIN
+Route::group(['prefix' => 'secure', 'middleware' => 'customDomainsEnabled'], function() {
+    Route::post('custom-domain/validate/2BrM45vvfS/api', 'Common\Domains\CustomDomainController@validateDomainApi');
+    Route::get('custom-domain/validate/2BrM45vvfS', 'Common\Domains\CustomDomainController@validateDomain');
+});
+
+// PAYPAL
 Route::get('billing/paypal/callback/approved', 'Common\Billing\Gateways\Paypal\PaypalController@approvedCallback');
 Route::get('billing/paypal/callback/canceled', 'Common\Billing\Gateways\Paypal\PaypalController@canceledCallback');
-
 Route::get('billing/paypal/loading', 'Common\Billing\Gateways\Paypal\PaypalController@loadingPopup');
 
-//stripe webhook
+// STRIPE
 Route::post('billing/stripe/webhook', 'Common\Billing\Webhooks\StripeWebhookController@handleWebhook');
 Route::post('billing/paypal/webhook', 'Common\Billing\Gateways\Paypal\PaypalWebhookController@handleWebhook');
-
-// FRONT-END ROUTES THAT NEED TO BE PRE-RENDERED
-Route::get('pages/{id}/{slug}', 'Common\Pages\PageController@show')->middleware('prerenderIfCrawler');

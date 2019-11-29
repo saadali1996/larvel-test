@@ -5,6 +5,7 @@ namespace App\Services\Videos;
 use App\Video;
 use App\VideoRating;
 use Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class RateVideo
 {
@@ -37,9 +38,9 @@ class RateVideo
         $video = $this->video->findOrFail($videoId);
 
         $videoRating = $video->ratings()
-            ->where('user_id', $userId)
-            ->orWhere('user_ip', $userIp)
-            ->first();
+            ->where(function(Builder $query) use($userId, $userIp) {
+                $query->where('user_id', $userId)->orWhere('user_ip', $userIp);
+            })->first();
 
         // remove old rating from this user
         if ($videoRating) {

@@ -1,12 +1,12 @@
 <?php namespace Common\Billing\Gateways\Stripe;
 
-use Illuminate\Http\Request;
-use Omnipay\Omnipay;
 use App\User;
-use Omnipay\Stripe\Gateway;
 use Common\Billing\GatewayException;
-use Omnipay\Common\Exception\InvalidCreditCardException;
 use Common\Billing\Gateways\Contracts\GatewayInterface;
+use Illuminate\Http\Request;
+use Omnipay\Common\Exception\InvalidCreditCardException;
+use Omnipay\Omnipay;
+use Omnipay\Stripe\Gateway;
 
 class StripeGateway implements GatewayInterface
 {

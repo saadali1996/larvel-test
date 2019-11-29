@@ -23,7 +23,7 @@ class AppearanceSaver
     const THEME_VALUES_PATH = 'appearance/theme-values.json';
 
     const CUSTOM_CSS_PATH = 'custom-code/custom-styles.css';
-    const CUSTOM_JS_PATH = 'custom-code/custom-scripts.js';
+    const CUSTOM_HTML_PATH = 'custom-code/custom-html.html';
 
     /**
      * Local filesystem instance.
@@ -45,8 +45,6 @@ class AppearanceSaver
     private $envEditor;
 
     /**
-     * AppearanceManager constructor.
-     *
      * @param Filesystem $fs
      * @param Settings $settings
      * @param FilesystemManager $storage
@@ -66,8 +64,6 @@ class AppearanceSaver
     }
 
     /**
-     * Save user modifications to site appearance.
-     *
      * @param array $params
      */
     public function save($params)
@@ -77,7 +73,7 @@ class AppearanceSaver
                 $this->saveTheme($value);
             } else if (starts_with($key, 'env.')) {
                 $this->saveEnvSetting($key, $value);
-            } else if ($key === 'custom_code.css' || $key === 'custom_code.js') {
+            } else if (starts_with($key, 'custom-code.')) {
                 $this->saveCustomCode($key, $value);
             } else if (is_string($value) && str_contains($value, 'branding-images')) {
                 $this->saveImageSetting($key, $value);
@@ -147,17 +143,10 @@ class AppearanceSaver
 
     public function saveCustomCode($key, $value)
     {
-        if ($key === 'custom_code.css') {
-            $path = self::CUSTOM_CSS_PATH;
-            $loadKey = 'custom_code.load_css';
-        } else {
-            $path = self::CUSTOM_JS_PATH;
-            $loadKey = 'custom_code.load_js';
-        }
+        $path = $key === 'custom-code.css' ?
+            self::CUSTOM_CSS_PATH :
+            self::CUSTOM_HTML_PATH;
 
-        //make sure to update load setting for css and js, so we don't load empty files
-        $this->settings->save([$loadKey => !!$value]);
-
-        return $this->storage->disk('public')->put($path, $value);
+        return $this->storage->disk('public')->put($path, trim($value));
     }
 }

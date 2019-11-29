@@ -11,6 +11,7 @@ use App\Video;
 use Carbon\Carbon;
 use Common\Settings\Settings;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 class TransformData
 {
@@ -36,7 +37,7 @@ class TransformData
 
     /**
      * @param array $tmdbMedia
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function execute($tmdbMedia)
     {
@@ -248,8 +249,9 @@ class TransformData
 
     private function transformPerson($tmdbPerson)
     {
-        $hasCredits = Arr::has($tmdbPerson, 'combined_credits');
-        $hasKnownForCredits = Arr::has($tmdbPerson, 'known_for');
+        $syncCredits = $this->settings->get('content.automate_filmography');
+        $hasCredits = Arr::has($tmdbPerson, 'combined_credits') && $syncCredits;
+        $hasKnownForCredits = Arr::has($tmdbPerson, 'known_for') && $syncCredits;
 
         $data = [
             'id' => $this->encodeId('tmdb', Person::PERSON_TYPE, $tmdbPerson['id']),
@@ -260,6 +262,7 @@ class TransformData
             'poster' => $this->getPoster($tmdbPerson['profile_path']),
             'type' => Person::PERSON_TYPE,
             'adult' => Arr::get($tmdbPerson, 'adult', false),
+            'fully_synced' => Arr::get($tmdbPerson, 'fully_synced') ?: false,
             'relation_data' => [
                 'character' => array_get($tmdbPerson, 'character') ?: null,
                 'order' => array_get($tmdbPerson, 'order', 0),
@@ -319,10 +322,6 @@ class TransformData
             if (Arr::has($tmdbPerson, $tmdbKey)) {
                 $data[$localKey] = $tmdbPerson[$tmdbKey];
             }
-        }
-
-        if (Arr::has($tmdbPerson, 'combined_credits')) {
-            $data['fully_synced'] = true;
         }
 
         return $data;
@@ -408,14 +407,18 @@ class TransformData
      */
     private function getVideos($tmdbTitle)
     {
+        $videos = Arr::get($tmdbTitle, 'videos.results', []);
+        $videos = array_slice($videos, 0, 10);
+
         return array_map(function($video) {
             return [
                 'name' => $video['name'],
                 'url' => self::YOUTUBE_BASE_URI . $video['key'],
                 'type' => Video::VIDEO_TYPE_EMBED,
                 'source' => 'tmdb',
+                'category' => Arr::get($video, 'type', 'trailer'),
             ];
-        }, Arr::get($tmdbTitle, 'videos.results', []));
+        }, $videos);
     }
 
     /**

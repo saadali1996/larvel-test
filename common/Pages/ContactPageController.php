@@ -1,11 +1,11 @@
 <?php namespace Common\Pages;
 
 use App\User;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Notifications\ContactPageMessage;
 use Illuminate\Http\Request;
 
-class ContactPageController extends Controller
+class ContactPageController extends BaseController
 {
     public function sendMessage(Request $request)
     {

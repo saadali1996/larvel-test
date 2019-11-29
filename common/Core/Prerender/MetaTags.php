@@ -66,7 +66,30 @@ class MetaTags implements Arrayable
 
     public function toArray()
     {
-        return $this->getAll();
+        // remove all tags to which placeholders could not be replaced with actual content
+        $tags = collect($this->getAll())
+            ->map(function($tag) {
+                // ld+json tags will contain child arrays
+                $strings = array_filter($tag, function($value) {
+                    return !is_array($value);
+                });
+                $content = implode($strings);
+                $shouldRemove = str_contains($content, '{{') && str_contains($content, '}}');
+
+                // if could not replace title placeholder, return app name as title instead
+                if ($shouldRemove && $tag['nodeName'] === 'title') {
+                    $tag['_text'] = config('app.name');
+                    $shouldRemove = false;
+                };
+                if ($shouldRemove && Arr::get($tag, 'property') === 'og:title') {
+                    $tag['content'] = config('app.name');
+                    $shouldRemove = false;
+                };
+
+                return $shouldRemove ? null : $tag;
+            });
+
+        return $tags->filter()->values()->toArray();
     }
 
     public function getTitle()
@@ -123,6 +146,7 @@ class MetaTags implements Arrayable
         $string = '';
 
         foreach(array_except($tag, 'nodeName') as $key => $value) {
+            $value = is_array($value) ? implode(',', $value) : $value;
             $string .= "$key=\"$value\" ";
         }
 

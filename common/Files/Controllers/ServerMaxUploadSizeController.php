@@ -3,9 +3,9 @@
 namespace Common\Files\Controllers;
 
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class ServerMaxUploadSizeController extends Controller
+class ServerMaxUploadSizeController extends BaseController
 {
     /**
      * @var Request

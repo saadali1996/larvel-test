@@ -3,9 +3,9 @@
 use Hash;
 use App\User;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class ChangePasswordController extends Controller
+class ChangePasswordController extends BaseController
 {
     /**
      * @var Request
@@ -18,8 +18,6 @@ class ChangePasswordController extends Controller
     private $user;
 
     /**
-     * ChangePasswordController constructor.
-     *
      * @param Request $request
      * @param User $user
      */
@@ -30,8 +28,6 @@ class ChangePasswordController extends Controller
     }
 
     /**
-     * Change specified user password.
-     *
      * @param int $userId
      * @return User
      */
@@ -50,8 +46,6 @@ class ChangePasswordController extends Controller
     }
 
     /**
-     * Get validation rules for changing user password.
-     *
      * @param User $user
      * @return array
      */

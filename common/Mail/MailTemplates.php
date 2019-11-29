@@ -124,8 +124,6 @@ class MailTemplates
     }
 
     /**
-     * Get all mail templates.
-     *
      * @param array $options
      * @return Collection
      */

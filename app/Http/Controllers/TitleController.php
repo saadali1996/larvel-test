@@ -13,13 +13,13 @@ use App\Services\Titles\Retrieve\ShowTitle;
 use App\Services\Titles\Store\StoreTitleData;
 use App\Title;
 use App\Video;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
-class TitleController extends Controller
+class TitleController extends BaseController
 {
     /**
      * @var Request
@@ -55,11 +55,12 @@ class TitleController extends Controller
 
     /**
      * @param string|integer $titleId
+     * @param string $titleName
      * @param string $seasonNumber
      * @param string $episodeNumber
      * @return JsonResponse
      */
-    public function show($titleId, $seasonNumber = null, $episodeNumber = null)
+    public function show($titleId, $titleName = null, $seasonNumber = null, $episodeNumber = null)
     {
         $this->authorize('show', Title::class);
 
@@ -70,7 +71,7 @@ class TitleController extends Controller
 
         $response = app(ShowTitle::class)->execute($titleId, $params);
 
-        $this->dispatch(new IncrementModelViews($response['title']));
+        $this->dispatch(new IncrementModelViews(Title::TITLE_TYPE, $response['title']['id']));
 
         $type = 'title';
         $dataForSeo = null;
@@ -95,6 +96,11 @@ class TitleController extends Controller
         ];
 
         return $this->success($response, 200, $options);
+    }
+
+    public function showWithoutNameParam($titleId, $seasonNumber = null, $episodeNumber = null)
+    {
+        return $this->show($titleId, null, $seasonNumber, $episodeNumber);
     }
 
     /**
@@ -174,6 +180,8 @@ class TitleController extends Controller
         app(Video::class)->whereIn('id', $videoIds)->delete();
 
         DB::table('video_ratings')->whereIn('video_id', $videoIds)->delete();
+        DB::table('video_captions')->whereIn('video_id', $videoIds)->delete();
+        DB::table('video_reports')->whereIn('video_id', $videoIds)->delete();
 
         // titles
         $this->title->whereIn('id', $titleIds)->delete();

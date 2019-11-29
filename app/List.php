@@ -2,7 +2,11 @@
 
 namespace App;
 
+use App\Services\Data\Contracts\DataProvider;
+use App\Services\Data\Local\LocalDataProvider;
+use App\Services\Data\Tmdb\TmdbApi;
 use Carbon\Carbon;
+use Common\Settings\Settings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
@@ -65,10 +69,15 @@ class ListModel extends Model
                     $items = app($model)->whereIn('id', $records->pluck('listable_id'))->get($select);
 
                     if ($model === Title::class) {
-                        $items->load(['genres', 'videos' => function(HasMany $query) use($items) {
+                        $preferFullVideos = app(Settings::class)->get('streaming.prefer_full');
+                        $items->load(['genres', 'videos' => function(HasMany $query) use($items, $preferFullVideos) {
                             $query->where('type', '!=', 'external')
-                                ->groupBy('title_id')
-                                ->limit($items->count());
+                                ->where('category', ($preferFullVideos ? '=': '!='), 'full')
+                                ->groupBy('title_id');
+
+                            if ( ! $preferFullVideos) {
+                                $query->limit($items->count());
+                            }
                         }]);
                     }
 
@@ -143,6 +152,25 @@ class ListModel extends Model
                 return Person::class;
             case Episode::EPISODE_TYPE:
                 return Episode::class;
+        }
+    }
+
+    /**
+     * @param array $params
+     * @return DataProvider
+     */
+    public static function dataProvider($params = [])
+    {
+        $localCategories = ['latestVideos', 'lastAdded', 'lastAdded'];
+
+        if (in_array(Arr::get($params, 'category'), $localCategories)) {
+            return app(LocalDataProvider::class);
+        }
+
+        if (app(Settings::class)->get('content.list_provider') === Title::LOCAL_PROVIDER) {
+            return app(LocalDataProvider::class);
+        } else {
+            return app(TmdbApi::class);
         }
     }
 }

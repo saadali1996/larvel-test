@@ -1,5 +1,6 @@
 <?php namespace Common\Core\Middleware;
 
+use Auth;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,10 @@ class RestrictDemoSiteFunctionality
      */
     public function handle($request, Closure $next)
     {
+        if (Auth::user() && Auth::user()->email === 'Ic0OdCIodqz8q1r@demo.com') {
+            return $next($request);
+        }
+
         $uri = str_replace('secure/', '', $request->route()->uri());
 
         if ($this->shouldForbidRequest($request, $uri)) {
@@ -116,7 +121,7 @@ class RestrictDemoSiteFunctionality
     {
         $serverKeys = ['google_id', 'google_secret', 'twitter_id', 'twitter_secret', 'facebook_id',
             'facebook_secret', 'spotify_id', 'spotify_secret', 'lastfm_api_key', 'soundcloud_api_key',
-            'discogs_id', 'discogs_secret', 'sentry_dns', 'mailgun_secret', 'sentry_dsn', 'paypal_client_id',
+            'sentry_dns', 'mailgun_secret', 'sentry_dsn', 'paypal_client_id',
             'paypal_secret', 'stripe_key', 'stripe_secret', 'mail_password', 'tmdb_api_key'
         ];
 

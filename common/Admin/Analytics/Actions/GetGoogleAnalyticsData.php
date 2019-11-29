@@ -22,7 +22,7 @@ class GetGoogleAnalyticsData implements GetAnalyticsData
         $this->registerCollectionMacros();
     }
 
-    public function execute()
+    public function execute($channel)
     {
         return [
             'browsers' =>  $this->analytics->getTopBrowsers(7),

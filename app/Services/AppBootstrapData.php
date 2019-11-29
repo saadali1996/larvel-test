@@ -1,67 +1,45 @@
 <?php namespace App\Services;
 
-use App\ListModel;
+use Common\Core\Bootstrap\BaseBootstrapData;
 
-class AppBootstrapData
+class AppBootstrapData extends BaseBootstrapData
 {
-    /**
-     * @var ListModel
-     */
-    private $list;
-
-    /**
-     * @param ListModel $list
-     */
-    public function __construct(ListModel $list)
+    public function init()
     {
-        $this->list = $list;
+        parent::init();
+
+        if (isset($this->data['user'])) {
+            $this->getWatchlist();
+            $this->getRatings();
+        }
+
+        return $this;
     }
 
     /**
-     * Get data needed to bootstrap the application.
-     *
-     * @param $bootstrapData
-     * @return array
+     * @return void
      */
-    public function get($bootstrapData)
+    private function getWatchlist()
     {
-        if ( ! isset($bootstrapData['user'])) return $bootstrapData;
-
-        $bootstrapData = $this->getWatchlist($bootstrapData);
-        $bootstrapData = $this->getRatings($bootstrapData);
-
-        return $bootstrapData;
-    }
-
-    /**
-     * @param array $bootstrapData
-     * @return array
-     */
-    private function getWatchlist($bootstrapData)
-    {
-        $list = $bootstrapData['user']
+        $list = $this->data['user']
             ->watchlist()
             ->first();
 
-        if ( ! $list) return $bootstrapData;
+        if ( ! $list) return;
 
         $items = $list->getItems(['minimal' => true]);
 
-        $bootstrapData['watchlist'] = [
+        $this->data['watchlist'] = [
             'id' => $list->id,
             'items' => $items
         ];
-
-        return $bootstrapData;
     }
 
     /**
-     * @param $bootstrapData
-     * @return mixed
+     * @return void
      */
-    private function getRatings($bootstrapData)
+    private function getRatings()
     {
-        $bootstrapData['ratings'] = $bootstrapData['user']->ratings()->get();
-        return $bootstrapData;
+        $this->data['ratings'] = $this->data['user']->ratings()->get();
     }
 }

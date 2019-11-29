@@ -9,10 +9,10 @@ use App\Services\Titles\Retrieve\FindOrCreateMediaItem;
 use App\Services\Titles\Store\StoreTitleData;
 use App\Services\Traits\HandlesTitleId;
 use App\Title;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Illuminate\Http\Request;
 
-class ImportMediaController extends Controller
+class ImportMediaController extends BaseController
 {
     use HandlesTitleId;
 
@@ -57,23 +57,37 @@ class ImportMediaController extends Controller
     {
         $this->authorize('store', Title::class);
 
+        if ( ! config('services.tmdb.key')) {
+            return 'Enter your Themoviedb API key in settings page before importing titles.';
+        }
+
         @set_time_limit(0);
+        @ini_set('memory_limit','200M');
 
         $type = $this->request->get('type', 'movie');
-        $limit = $this->request->get('limit', 1000);
+        $limit = $this->request->get('limit', 500);
         $page = $this->request->get('page', 1);
 
         $tmdbParams = $this->request->except(['type', 'limit', 'page']);
 
         // if page is more then 1, need to increase limit as well
-        $limit = min(1000, $limit + $page);
+        $limit = min(500, $limit + $page);
 
         for ($i = $page; $i <= $limit; $i++) {
             $response = app(TmdbApi::class)->browse($i, $type, $tmdbParams);
+
+            if ($response['total_pages'] < $limit) {
+                $limit = $response['total_pages'];
+            }
+
             $response['results']->each(function($result, $index) use($i) {
-                $title = app(FindOrCreateMediaItem::class)->execute($result['id'], Title::TITLE_TYPE);
-                if ($title->needsUpdating(true)) {
-                    $this->updateTitle($title);
+                try {
+                    $title = app(FindOrCreateMediaItem::class)->execute($result['id'], Title::TITLE_TYPE);
+                    if ($title->needsUpdating(true)) {
+                        $this->updateTitle($title);
+                    }
+                } catch (\Exception $e) {
+                    //
                 }
                 echo "Imported page: $i | title: $index | {$title->name} <br>";
                 $this->flushOutput();

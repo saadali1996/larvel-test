@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\ListModel;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 use Common\Settings\Settings;
 
-class HomepageContentController extends Controller
+class HomepageContentController extends BaseController
 {
     /**
      * @var ListModel
@@ -33,7 +33,7 @@ class HomepageContentController extends Controller
         $homepageLists = $this->settings->getJson('homepage.lists');
         if ( ! $homepageLists) return ['lists' => []];
 
-        $lists = $this->list->whereIn('id', $homepageLists)->get();
+        $lists = $this->list->whereIn('id', $homepageLists)->where('system', false)->get();
         $itemCount = $this->settings->get('homepage.list_items_count', 10);
         $sliderItemCount = $this->settings->get('homepage.slider_items_count', 5);
 

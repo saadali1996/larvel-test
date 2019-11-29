@@ -3,62 +3,50 @@
 use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Common\Core\Controller;
+use Common\Core\BaseController;
 
-class RolesController extends Controller
+class RolesController extends BaseController
 {
     /**
-     * User model.
-     *
      * @var User
      */
     private $user;
 
     /**
-     * Role model.
-     *
      * @var Role
      */
     private $role;
 
     /**
-     * Laravel request instance.
-     *
      * @var Request
      */
     private $request;
 
     /**
-     * RolesController constructor.
-     *
      * @param Request $request
      * @param Role $role
      * @param User $user
      */
     public function __construct(Request $request, Role $role, User $user)
     {
-        $this->role   = $role;
-        $this->user    = $user;
+        $this->role = $role;
+        $this->user = $user;
         $this->request = $request;
     }
 
     /**
-     * Paginate all existing roles.
-     *
      * @return JsonResponse
      */
     public function index()
     {
         $this->authorize('index', Role::class);
 
-        $pagination = $this->role->paginate(13);
+        $pagination = $this->role->with('permissions')->paginate(13);
 
         return $this->success(['pagination' => $pagination]);
     }
 
     /**
-     * Create a new role.
-     *
      * @return JsonResponse
      */
     public function store()
@@ -72,19 +60,13 @@ class RolesController extends Controller
             'permissions' => 'array'
         ]);
 
-        $role = $this->role->forceCreate([
-            'name'        => $this->request->get('name'),
-            'permissions' => $this->request->get('permissions'),
-            'default'     => $this->request->get('default', 0),
-            'guests'      => $this->request->get('guests', 0)
-        ]);
+        $role = app(CrupdateRole::class)
+            ->execute($this->request->all());
 
         return $this->success(['data' => $role], 201);
     }
 
     /**
-     * Update existing role.
-     *
      * @param integer $id
      * @return JsonResponse
      */
@@ -101,7 +83,8 @@ class RolesController extends Controller
 
         $role = $this->role->findOrFail($id);
 
-        $role->fill($this->request->all())->save();
+        $role = app(CrupdateRole::class)
+            ->execute($this->request->all(), $role);
 
         return $this->success(['data' => $role]);
     }

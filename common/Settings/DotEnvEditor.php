@@ -54,7 +54,6 @@ class DotEnvEditor extends Loader
 
         foreach ($values as $key => $value) {
             $value = $this->formatValue($value);
-
             $key = strtoupper($key);
 
             if (str_contains($content, $key.'=')) {
@@ -76,9 +75,11 @@ class DotEnvEditor extends Loader
      */
     private function formatValue($value)
     {
+        if ($value === 0 || $value === false) $value = 'false';
+        if ($value === 1 || $value === true) $value = 'true';
         if ( ! $value) $value = 'null';
 
-        //wrap string in quotes, if it contains whitespace
+        // wrap string in quotes, if it contains whitespace
         if (preg_match('/\s/', $value)) {
             //replace double quotes with single quotes
             $value = str_replace('"', "'", $value);
